@@ -9,10 +9,21 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     
+    - name: Setup Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+        
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        channel: 'stable'
+        
     - name: Setup Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: '3.11'
         
@@ -20,14 +31,13 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install flet
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
         
     - name: Build APK
-      uses: flet-dev/flet-action@v1
-      with:
-        target: main.py
-        
+      run: flet build apk --verbose
+      
     - name: Upload APK
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: my-app-apk
         path: build/apk/*.apk
