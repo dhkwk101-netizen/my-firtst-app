@@ -1,0 +1,44 @@
+{
+  "type": "FeatureCollection",
+  "year": "2020",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "adm_cd": "TEST_SGIS_A",
+        "adm_nm": "테스트구A"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [953000, 1953000],
+            [954000, 1953000],
+            [954000, 1954000],
+            [953000, 1954000],
+            [953000, 1953000]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "adm_cd": "TEST_SGIS_B",
+        "adm_nm": "테스트구B"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [954000, 1951000],
+            [955000, 1951000],
+            [955000, 1952000],
+            [954000, 1952000],
+            [954000, 1951000]
+          ]
+        ]
+      }
+    }
+  ]
+}
