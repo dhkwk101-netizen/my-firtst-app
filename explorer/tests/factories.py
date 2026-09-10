@@ -51,10 +51,17 @@ def make_job_and_slice(job_key="TEST_JOB_1"):
     slice_row = IngestionSlice.objects.create(
         ingestion_job=job,
         slice_key=f"{job_key}_SLICE_1",
-        request_parameters={"orgId": "TEST_ORG", "tblId": "TEST_TABLE"},
+        request_parameters={"orgId": "TEST_ORG", "tblId": "TEST_TABLE", "startPrdDe": "2020", "endPrdDe": "2024"},
         status="PENDING",
     )
     return job, slice_row
+
+
+def make_planned_job(slice_status="PENDING", job_key="TEST_PLAN_JOB"):
+    job, slice_row = make_job_and_slice(job_key)
+    slice_row.status = slice_status
+    slice_row.save()
+    return job
 
 
 def make_region_and_period(year=2024):
