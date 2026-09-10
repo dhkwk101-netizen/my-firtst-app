@@ -17,6 +17,15 @@ from explorer.models.geo import (
     RegionName,
     RegionRelation,
 )
+from explorer.models.ingest import (
+    IngestionJob,
+    IngestionSlice,
+    RawObservation,
+)
+from explorer.models.mart import (
+    Observation,
+    ObservationInput,
+)
 from explorer.models.semantic import (
     DerivedIndicator,
     DerivedIndicatorInput,
@@ -41,9 +50,14 @@ __all__ = [
     "DerivedIndicatorInput",
     "Indicator",
     "IndicatorSourceAssignment",
+    "IngestionJob",
+    "IngestionSlice",
     "Metric",
     "NormalizationRule",
+    "Observation",
+    "ObservationInput",
     "Period",
+    "RawObservation",
     "Region",
     "RegionIdentifier",
     "RegionName",
