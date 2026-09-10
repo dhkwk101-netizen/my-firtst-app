@@ -6,9 +6,13 @@ class UiTests(TestCase):
         response = self.client.get("/")
         content = response.content.decode()
         self.assertContains(response, 'label for="region-select"')
+        self.assertContains(response, 'select id="province-select"')
+        self.assertContains(response, 'input type="text" id="region-search"')
+        self.assertContains(response, 'input type="text" id="ranking-search"')
         self.assertContains(response, 'canvas id="tax-chart"')
         self.assertContains(response, 'canvas id="population-chart"')
         self.assertContains(response, 'div id="map"')
         self.assertContains(response, 'table id="ranking-table"')
         self.assertNotIn("KOSIS_API_KEY", content)
         self.assertNotIn("objL1", content)
+

@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>대한민국 기초자치단체 지역 데이터 탐색기 (2010–2024)</title>
+  <title>대한민국 기초자치단체 지역통계 및 재정·인구 탐색기 (2010–2024)</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -21,31 +21,66 @@
     <div class="header-inner">
       <div class="header-brand">
         <h1>지자체 지역통계 및 재정·인구 탐색기</h1>
-        <p class="subtitle">2010–2024 대한민국 기초자치단체 취득세 · 인구 · 1인당 지표 및 행정구역 이력 분석</p>
+        <p class="subtitle">2010–2024 전국 17개 시·도 230개 기초자치단체 취득세 · 주민등록인구 · 1인당 지표 분석</p>
       </div>
       <div class="header-badges">
         <span class="status-badge">
           <span class="status-dot"></span>
-          실시간 연계 완료
+          전국 230개 자치단체 데이터 완비
         </span>
-        <span class="version-badge">2010–2024 (15개년)</span>
+        <span class="version-badge">2010–2024 (15개년 연속)</span>
       </div>
     </div>
   </header>
 
   <main class="main-container">
+    <!-- Advanced Controls Panel -->
     <section class="controls-panel" aria-label="필터 컨트롤">
       <div class="control-group">
-        <label for="region-select">지역 선택 (시·군·구)</label>
-        <select id="region-select" aria-label="분석 대상 자치단체">
-          <option value="">지역을 선택하세요</option>
+        <label for="province-select">1단계: 광역 시·도 선택</label>
+        <select id="province-select" aria-label="광역 시·도 선택">
+          <option value="">전국 전체 (17개 시·도 230개 자치단체)</option>
+          <option value="KR_11">서울특별시 (25개 구)</option>
+          <option value="KR_41">경기도 (31개 시·군)</option>
+          <option value="KR_26">부산광역시 (16개 구·군)</option>
+          <option value="KR_27">대구광역시 (8개 구·군)</option>
+          <option value="KR_28">인천광역시 (10개 구·군)</option>
+          <option value="KR_29">광주광역시 (5개 구)</option>
+          <option value="KR_30">대전광역시 (5개 구)</option>
+          <option value="KR_31">울산광역시 (5개 구·군)</option>
+          <option value="KR_36">세종특별자치시</option>
+          <option value="KR_51">강원특별자치도 (18개 시·군)</option>
+          <option value="KR_43">충청북도 (11개 시·군)</option>
+          <option value="KR_44">충청남도 (15개 시·군)</option>
+          <option value="KR_52">전북특별자치도 (14개 시·군)</option>
+          <option value="KR_46">전라남도 (22개 시·군)</option>
+          <option value="KR_47">경상북도 (23개 시·군)</option>
+          <option value="KR_48">경상남도 (18개 시·군)</option>
+          <option value="KR_50">제주특별자치도 (2개 시)</option>
         </select>
+      </div>
+
+      <div class="control-group region-control-group">
+        <div class="control-header-flex">
+          <label for="region-select">2단계: 기초자치단체 (시·군·구)</label>
+          <span id="search-count-badge" class="search-count-badge">230개</span>
+        </div>
+        <div class="search-select-wrapper">
+          <div class="input-with-icon">
+            <span class="search-icon" aria-hidden="true">🔍</span>
+            <input type="text" id="region-search" placeholder="지자체 실시간 검색 (예: 과천, 해운대, 강남)..." autocomplete="off" aria-label="지자체 실시간 검색">
+            <button type="button" id="region-search-clear" class="btn-clear" title="검색어 지우기" aria-label="검색어 지우기">✕</button>
+          </div>
+          <select id="region-select" aria-label="분석 대상 자치단체">
+            <option value="">지역을 선택하세요</option>
+          </select>
+        </div>
       </div>
 
       <div class="control-group">
         <label for="year-select">지도 및 순위 기준 연도</label>
         <select id="year-select" aria-label="지도 및 순위 기준 연도">
-          <option value="2024" selected>2024년 (최신)</option>
+          <option value="2024" selected>2024년 (최신 발표)</option>
           <option value="2023">2023년</option>
           <option value="2022">2022년</option>
           <option value="2021">2021년</option>
@@ -66,39 +101,73 @@
       <div class="control-group">
         <label for="indicator-select">주요 분석 지표</label>
         <select id="indicator-select" aria-label="주요 분석 지표">
-          <option value="ACQUISITION_TAX" selected>취득세 (원천)</option>
+          <option value="ACQUISITION_TAX_PER_CAPITA" selected>1인당 취득세 (파생 분석)</option>
+          <option value="ACQUISITION_TAX">취득세 총세입액 (원천)</option>
           <option value="POPULATION">주민등록 인구 (원천)</option>
-          <option value="ACQUISITION_TAX_PER_CAPITA">1인당 취득세 (파생)</option>
         </select>
+      </div>
+    </section>
+
+    <!-- Selected District Hero Summary Banner -->
+    <section class="region-hero-card" id="region-hero" aria-label="선택 지자체 요약 정보">
+      <div class="region-hero-left">
+        <div class="region-title-row">
+          <span class="province-tag" id="hero-province-tag">서울특별시</span>
+          <h2 id="hero-region-name">강남구</h2>
+          <span class="hero-region-key" id="hero-region-key">(KR_11680)</span>
+        </div>
+        <p class="hero-desc" id="hero-desc">
+          <span id="hero-year">2024</span>년 기준 전국 기초자치단체 중 1인당 취득세 <strong id="hero-national-rank">3위</strong> (총 230개 지자체)
+        </p>
+      </div>
+      <div class="region-hero-right">
+        <div class="quick-compare-label">주요 자치단체 바로가기:</div>
+        <div class="quick-chips">
+          <button type="button" class="chip-btn" data-key="KR_11140">서울 중구</button>
+          <button type="button" class="chip-btn" data-key="KR_41290">경기 과천시</button>
+          <button type="button" class="chip-btn" data-key="KR_11680">서울 강남구</button>
+          <button type="button" class="chip-btn" data-key="KR_46910">전남 신안군</button>
+          <button type="button" class="chip-btn" data-key="KR_26350">부산 해운대구</button>
+          <button type="button" class="chip-btn" data-key="KR_27260">대구 수성구</button>
+        </div>
       </div>
     </section>
 
     <!-- KPI Cards -->
     <section class="kpi-grid" aria-label="주요 지표 요약">
+      <article class="kpi-card" id="kpi-derived">
+        <span class="kpi-label"><span id="kpi-year-derived">2024</span>년 1인당 평균 취득세액</span>
+        <span class="kpi-value highlight-derived" id="kpi-derived-val">-</span>
+        <span class="kpi-footnote">주민 1인당 납부 지방세입 부담·기여도</span>
+      </article>
       <article class="kpi-card" id="kpi-tax">
-        <span class="kpi-label">선택 연도 취득세 세입액</span>
+        <span class="kpi-label"><span id="kpi-year-tax">2024</span>년 취득세 총세입액</span>
         <span class="kpi-value" id="kpi-tax-val">-</span>
+        <span class="kpi-footnote">행안부 지방세 연감 공식 세입 결산액</span>
       </article>
       <article class="kpi-card" id="kpi-pop">
-        <span class="kpi-label">선택 연도 주민등록 인구수</span>
+        <span class="kpi-label"><span id="kpi-year-pop">2024</span>년 주민등록 연말 인구수</span>
         <span class="kpi-value" id="kpi-pop-val">-</span>
-      </article>
-      <article class="kpi-card" id="kpi-derived">
-        <span class="kpi-label">1인당 평균 취득세액</span>
-        <span class="kpi-value" id="kpi-derived-val">-</span>
+        <span class="kpi-footnote">통계청 행정구역별 주민등록인구</span>
       </article>
     </section>
 
     <!-- Trend Charts -->
     <section class="charts-section" aria-label="시계열 추이 분석">
       <div class="chart-card">
-        <h2>취득세 세입 추이 (2010–2024)</h2>
+        <div class="chart-header-row">
+          <h2>취득세 세입 추이 (2010–2024)</h2>
+          <span class="chart-badge">15개년 연속 시계열</span>
+        </div>
         <div class="chart-container">
           <canvas id="tax-chart"></canvas>
         </div>
       </div>
       <div class="chart-card">
-        <h2>주민등록 인구 추이 (2010–2024)</h2>
+        <div class="chart-header-row">
+          <h2>주민등록 인구 추이 (2010–2024)</h2>
+          <span class="chart-badge pop-badge">인구 변동 추이</span>
+        </div>
         <div class="chart-container">
           <canvas id="population-chart"></canvas>
         </div>
@@ -108,24 +177,48 @@
     <!-- Map & Ranking Split View -->
     <section class="geo-ranking-section" aria-label="행정구역 지도 및 순위">
       <div class="map-card">
-        <h2>전국 행정구역 공간분포 히트맵 (<span id="map-year-label">2024</span>년)</h2>
+        <div class="map-header-flex">
+          <h2>전국 공간분포 히트맵 (<span id="map-year-label">2024</span>년)</h2>
+          <div class="map-actions">
+            <button type="button" id="btn-reset-map" class="map-action-btn" title="전국 중심으로 지도 줌 리셋">전국 보기</button>
+            <button type="button" id="btn-zoom-region" class="map-action-btn" title="선택 지자체로 확대">선택 지역 확대</button>
+          </div>
+        </div>
         <div id="map"></div>
       </div>
+
       <div class="ranking-card">
-        <h2>전국 기초자치단체 순위표</h2>
+        <div class="ranking-header-box">
+          <div class="ranking-title-row">
+            <h2 id="ranking-title">기초자치단체 순위표</h2>
+            <span class="ranking-counter" id="ranking-count">230개 자치단체</span>
+          </div>
+
+          <div class="ranking-toolbar">
+            <div class="ranking-scope-toggle" role="group" aria-label="순위 범위 선택">
+              <button type="button" id="btn-scope-all" class="scope-btn active">전국 순위</button>
+              <button type="button" id="btn-scope-prov" class="scope-btn">시·도 내 순위</button>
+            </div>
+            <div class="ranking-search-box">
+              <input type="text" id="ranking-search" placeholder="순위표 내 지자체 검색..." aria-label="순위표 내 지자체 검색">
+            </div>
+          </div>
+        </div>
+
         <div class="table-container">
           <table id="ranking-table">
             <thead>
               <tr>
-                <th>순위</th>
-                <th>지역</th>
-                <th>지표값</th>
-                <th>상태</th>
+                <th style="width: 70px;">순위</th>
+                <th>자치단체</th>
+                <th>시·도</th>
+                <th style="text-align: right;">지표값</th>
+                <th style="width: 75px; text-align: center;">상태</th>
               </tr>
             </thead>
             <tbody>
               <tr>
-                <td colspan="4" class="text-center">데이터를 불러오는 중입니다...</td>
+                <td colspan="5" class="text-center">데이터를 불러오는 중입니다...</td>
               </tr>
             </tbody>
           </table>
@@ -137,9 +230,10 @@
     <section class="source-panel" aria-label="데이터 출처 및 메타데이터">
       <h2>데이터 출처 및 계보 (Data Lineage & Provenance)</h2>
       <div id="source-details">
-        <p><strong>원천 제공처:</strong> 통계청 KOSIS 국가통계포털 OpenAPI & 행정안전부 지방세정</p>
-        <p><strong>공간 경계:</strong> 통계지리정보서비스(SGIS) 연도별 행정구역 경계 (EPSG:4326 재투영)</p>
-        <p><strong>품질 검증:</strong> 결측치(-)와 0원 식별 분리, 단일 계보(Single Lineage) 원칙 준수</p>
+        <p><strong>취득세 원천:</strong> 통계청 KOSIS 시·도별 세목별 취득세 결산 세입 (전국 16개 광역시도 공식 테이블 <code>TX_11007_A058</code> ~ <code>A073</code>, 2010–2024년 230개 지자체)</p>
+        <p><strong>인구 원천:</strong> 행정안전부·통계청 시군구별 주민등록 인구현황 (<code>DT_1B040A3</code>)</p>
+        <p><strong>공간 경계:</strong> 통계지리정보서비스(SGIS) 연도별 기초자치단체 공간 경계 (EPSG:4326 WGS84 재투영)</p>
+        <p><strong>품질 검증:</strong> 단일 계보(Single Lineage) 원칙, 0원과 결측치(-) 분리 정규화, 감사 추적성 완비</p>
       </div>
     </section>
   </main>
@@ -149,3 +243,4 @@
   <script src="{% static 'explorer/app.js' %}"></script>
 </body>
 </html>
+

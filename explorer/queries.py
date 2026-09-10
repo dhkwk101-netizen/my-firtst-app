@@ -12,6 +12,27 @@ from explorer.models import (
 )
 
 
+PROVINCE_MAP = {
+    "KR_11": {"name": "서울특별시", "short": "서울", "lat": 37.5665, "lng": 126.9780, "zoom": 11},
+    "KR_26": {"name": "부산광역시", "short": "부산", "lat": 35.1796, "lng": 129.0756, "zoom": 11},
+    "KR_27": {"name": "대구광역시", "short": "대구", "lat": 35.8714, "lng": 128.6014, "zoom": 11},
+    "KR_28": {"name": "인천광역시", "short": "인천", "lat": 37.4563, "lng": 126.7052, "zoom": 10},
+    "KR_29": {"name": "광주광역시", "short": "광주", "lat": 35.1595, "lng": 126.8526, "zoom": 11},
+    "KR_30": {"name": "대전광역시", "short": "대전", "lat": 36.3504, "lng": 127.3845, "zoom": 11},
+    "KR_31": {"name": "울산광역시", "short": "울산", "lat": 35.5384, "lng": 129.3114, "zoom": 11},
+    "KR_36": {"name": "세종특별자치시", "short": "세종", "lat": 36.4800, "lng": 127.2890, "zoom": 11},
+    "KR_41": {"name": "경기도", "short": "경기", "lat": 37.4138, "lng": 127.5183, "zoom": 9},
+    "KR_43": {"name": "충청북도", "short": "충북", "lat": 36.6357, "lng": 127.4912, "zoom": 9},
+    "KR_44": {"name": "충청남도", "short": "충남", "lat": 36.5184, "lng": 126.8000, "zoom": 9},
+    "KR_46": {"name": "전라남도", "short": "전남", "lat": 34.8679, "lng": 126.9910, "zoom": 8},
+    "KR_47": {"name": "경상북도", "short": "경북", "lat": 36.5760, "lng": 128.5056, "zoom": 8},
+    "KR_48": {"name": "경상남도", "short": "경남", "lat": 35.4606, "lng": 128.2132, "zoom": 9},
+    "KR_50": {"name": "제주특별자치도", "short": "제주", "lat": 33.4996, "lng": 126.5312, "zoom": 10},
+    "KR_51": {"name": "강원특별자치도", "short": "강원", "lat": 37.8228, "lng": 128.1555, "zoom": 8},
+    "KR_52": {"name": "전북특별자치도", "short": "전북", "lat": 35.7175, "lng": 127.1530, "zoom": 9},
+}
+
+
 def query_regions() -> list[dict[str, Any]]:
     regions = Region.objects.filter(status="ACTIVE").order_by("region_key")
     out = []
@@ -19,15 +40,26 @@ def query_regions() -> list[dict[str, Any]]:
         # Get official or latest name
         name_obj = r.names.filter(is_official=True).first() or r.names.first()
         name_str = name_obj.name if name_obj else r.region_key
+        prefix = r.region_key[:5]
+        prov = PROVINCE_MAP.get(prefix)
+        prov_name = prov["name"] if prov else None
+        short_prov = prov["short"] if prov else None
+        full_name = f"{prov_name} {name_str}" if prov_name else name_str
+
         out.append(
             {
                 "regionKey": r.region_key,
                 "name": name_str,
+                "fullName": full_name,
+                "provinceCode": prefix if prov else None,
+                "provinceName": prov_name,
+                "shortProvinceName": short_prov,
                 "level": r.region_level,
                 "kind": r.region_kind,
             }
         )
     return out
+
 
 
 def query_indicators() -> list[dict[str, Any]]:
@@ -138,6 +170,7 @@ def query_rankings(
     year: int,
     metric_key: str | None = None,
     tax_owner_key: str | None = None,
+    province_code: str | None = None,
 ) -> dict[str, Any]:
     boundary_set = BoundarySet.objects.filter(reference_year=year, status="ACTIVE").first()
     boundary_version = str(year)
@@ -159,6 +192,9 @@ def query_rankings(
         .select_related("region", "indicator", "metric", "tax_owner", "canonical_unit")
         .order_by("-numeric_value")
     )
+
+    if province_code:
+        qs = qs.filter(region__region_key__startswith=province_code)
 
     if metric_key:
         qs = qs.filter(metric__metric_key=metric_key)
@@ -182,11 +218,20 @@ def query_rankings(
 
         feature_key = feature_map.get(obs.region_id, obs.region.region_key)
         region_name = region_names.get(obs.region_id, obs.region.region_key)
+        prefix = obs.region.region_key[:5]
+        prov = PROVINCE_MAP.get(prefix)
+        prov_name = prov["name"] if prov else None
+        short_prov = prov["short"] if prov else None
+        full_name = f"{prov_name} {region_name}" if prov_name else region_name
 
         rankings.append(
             {
                 "regionKey": obs.region.region_key,
                 "regionName": region_name,
+                "fullName": full_name,
+                "provinceCode": prefix if prov else None,
+                "provinceName": prov_name,
+                "shortProvinceName": short_prov,
                 "featureKey": feature_key,
                 "value": val,
                 "rank": rank,
@@ -197,8 +242,10 @@ def query_rankings(
     return {
         "indicatorKey": indicator_key,
         "year": year,
+        "provinceCode": province_code,
         "boundaryVersion": boundary_version,
         "boundaryUrl": boundary_set.asset_uri if boundary_set else f"/static/geo/boundaries/{year}.geojson",
         "values": rankings,
         "rankings": rankings,
     }
+

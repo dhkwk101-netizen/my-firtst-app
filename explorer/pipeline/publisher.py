@@ -68,30 +68,34 @@ def publish_job(job_id: int) -> PublishResult:
                 tax_input = deriv.inputs.filter(role="TAX").first()
                 pop_input = deriv.inputs.filter(role="POPULATION").first()
                 if tax_input and pop_input:
-                    for staged in staged_rows:
-                        # Case 1: staged row is tax
-                        if staged.indicator == tax_input.input_indicator and staged.metric == tax_input.input_metric:
-                            pop_obs = Observation.objects.filter(
-                                region=staged.region,
-                                period=staged.period,
+                    # Check if staged row has tax
+                    if staged_rows and staged_rows[0].indicator == tax_input.input_indicator and staged_rows[0].metric == tax_input.input_metric:
+                        pop_map = {
+                            (p.region_id, p.period_id): p
+                            for p in Observation.objects.filter(
                                 indicator=pop_input.input_indicator,
                                 metric=pop_input.input_metric,
                                 status="PUBLISHED",
                                 superseded_at__isnull=True,
-                            ).first()
+                                region_id__in=[s.region_id for s in staged_rows],
+                                period_id__in=[s.period_id for s in staged_rows],
+                            )
+                        }
+                        # Bulk supersede any existing active derived observations for these region/periods
+                        Observation.objects.filter(
+                            indicator=deriv.indicator,
+                            metric=staged_rows[0].metric,
+                            status="PUBLISHED",
+                            superseded_at__isnull=True,
+                            region_id__in=[s.region_id for s in staged_rows],
+                            period_id__in=[s.period_id for s in staged_rows],
+                        ).update(status="SUPERSEDED", superseded_at=now)
+
+                        for staged in staged_rows:
+                            pop_obs = pop_map.get((staged.region_id, staged.period_id))
                             if pop_obs and pop_obs.numeric_value:
                                 per_cap_val = calculate_per_capita(staged.numeric_value, pop_obs.numeric_value)
                                 if per_cap_val is not None:
-                                    # Supersede any existing active derived observation
-                                    Observation.objects.filter(
-                                        region=staged.region,
-                                        period=staged.period,
-                                        indicator=deriv.indicator,
-                                        metric=staged.metric,
-                                        status="PUBLISHED",
-                                        superseded_at__isnull=True,
-                                    ).update(status="SUPERSEDED", superseded_at=now)
-
                                     derived_obs = Observation.objects.create(
                                         region=staged.region,
                                         period=staged.period,
@@ -115,9 +119,8 @@ def publish_job(job_id: int) -> PublishResult:
                                         input_observation=pop_obs,
                                         input_role="POPULATION",
                                     )
-                                    derived_count += 1
-                        # Case 2: staged row is population
-                        elif staged.indicator_id == pop_input.input_indicator_id and staged.metric_id == pop_input.input_metric_id:
+                    # Case 2: staged row is population
+                    elif staged_rows and staged_rows[0].indicator_id == pop_input.input_indicator_id and staged_rows[0].metric_id == pop_input.input_metric_id:
                             # Pre-index existing published tax observations for these periods/regions
                             tax_map = {
                                 (t.region_id, t.period_id): t

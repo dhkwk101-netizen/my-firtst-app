@@ -54,6 +54,7 @@ def api_rankings(request: HttpRequest) -> JsonResponse:
     year_str = request.GET.get("year", "2024")
     metric_key = request.GET.get("metric")
     tax_owner_key = request.GET.get("taxOwner")
+    province_code = request.GET.get("province")
 
     if not indicator_id:
         return JsonResponse({"error": "indicatorId is required"}, status=400)
@@ -71,5 +72,6 @@ def api_rankings(request: HttpRequest) -> JsonResponse:
         year=year,
         metric_key=metric_key,
         tax_owner_key=tax_owner_key,
+        province_code=province_code,
     )
     return JsonResponse(rankings)

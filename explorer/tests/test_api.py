@@ -50,8 +50,27 @@ class ApiTests(TestCase):
         region, indicator = make_published_series()
         res_reg = self.client.get("/api/regions")
         self.assertEqual(res_reg.status_code, 200)
-        self.assertTrue(len(res_reg.json()["regions"]) >= 1)
+        regions = res_reg.json()["regions"]
+        self.assertTrue(len(regions) >= 1)
+        self.assertIn("provinceCode", regions[0])
+        self.assertIn("fullName", regions[0])
 
         res_ind = self.client.get("/api/indicators")
         self.assertEqual(res_ind.status_code, 200)
         self.assertTrue(len(res_ind.json()["indicators"]) >= 1)
+
+    def test_rankings_supports_province_filtering(self):
+        region, indicator = make_published_series()
+        response = self.client.get(
+            "/api/rankings",
+            {
+                "indicatorId": indicator.indicator_key,
+                "year": "2024",
+                "province": "KR_11",
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload.get("provinceCode"), "KR_11")
+        self.assertIn("rankings", payload)
+
