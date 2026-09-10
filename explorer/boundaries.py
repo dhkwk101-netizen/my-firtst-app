@@ -29,6 +29,7 @@ def build_boundary_set(
     raw_geojson: bytes,
     source_crs: str,
     simplify_tolerance: float = 0,
+    out_dir: Path | None = None,
 ) -> BoundaryBuildResult:
     if not source_crs or not source_crs.strip():
         raise BoundaryError("Explicit verified source_crs is required")
@@ -115,8 +116,17 @@ def build_boundary_set(
         "features": out_features,
     }
 
-    # Write static file
-    static_dir = Path(settings.BASE_DIR) / "explorer" / "static" / "geo" / "boundaries"
+    # Write static file (protect real production files from being clobbered by unit tests)
+    import sys
+    if out_dir is not None:
+        static_dir = Path(out_dir)
+    elif getattr(settings, "BOUNDARY_OUTPUT_DIR", None):
+        static_dir = Path(settings.BOUNDARY_OUTPUT_DIR)
+    elif "test" in sys.argv:
+        static_dir = Path(settings.BASE_DIR) / "var" / "test_boundaries"
+    else:
+        static_dir = Path(settings.BASE_DIR) / "explorer" / "static" / "geo" / "boundaries"
+
     static_dir.mkdir(parents=True, exist_ok=True)
     out_file = static_dir / f"{year}.geojson"
     temp_file = out_file.with_suffix(".tmp")
@@ -124,6 +134,7 @@ def build_boundary_set(
     temp_file.replace(out_file)
 
     asset_uri = f"/static/geo/boundaries/{year}.geojson"
+
 
     # Persist BoundarySet and BoundaryFeature rows
     with transaction.atomic():
