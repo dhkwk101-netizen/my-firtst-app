@@ -165,6 +165,12 @@ def query_rankings(
     if tax_owner_key:
         qs = qs.filter(tax_owner__tax_owner_key=tax_owner_key)
 
+    # Pre-fetch official region names
+    region_names: dict[int, str] = {
+        rn.region_id: rn.name
+        for rn in RegionName.objects.filter(is_official=True)
+    }
+
     rankings = []
     current_rank = 1
     for obs in qs:
@@ -175,10 +181,12 @@ def query_rankings(
             current_rank += 1
 
         feature_key = feature_map.get(obs.region_id, obs.region.region_key)
+        region_name = region_names.get(obs.region_id, obs.region.region_key)
 
         rankings.append(
             {
                 "regionKey": obs.region.region_key,
+                "regionName": region_name,
                 "featureKey": feature_key,
                 "value": val,
                 "rank": rank,

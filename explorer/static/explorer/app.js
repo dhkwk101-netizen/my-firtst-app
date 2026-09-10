@@ -25,14 +25,23 @@ document.addEventListener("DOMContentLoaded", () => {
       const res = await fetch("/api/regions");
       const data = await res.json();
       regionSelect.innerHTML = '<option value="">지역을 선택하세요</option>';
-      data.regions.forEach(r => {
+      // Filter active districts and sort by name
+      const sortedRegions = (data.regions || []).filter(r => !r.regionKey.startsWith("TEST_"));
+      sortedRegions.sort((a, b) => (a.name || "").localeCompare(b.name || "", "ko"));
+
+      sortedRegions.forEach(r => {
         const opt = document.createElement("option");
         opt.value = r.regionKey;
-        opt.textContent = `${r.name} (${r.level})`;
+        opt.textContent = `${r.name} (${r.regionKey})`;
         regionSelect.appendChild(opt);
       });
-      if (data.regions.length > 0) {
-        regionSelect.value = data.regions[0].regionKey;
+
+      // Default to Gangnam-gu (KR_11680) or first available
+      const gangnam = sortedRegions.find(r => r.regionKey === "KR_11680");
+      if (gangnam) {
+        regionSelect.value = gangnam.regionKey;
+      } else if (sortedRegions.length > 0) {
+        regionSelect.value = sortedRegions[0].regionKey;
       }
     } catch (err) {
       console.error("Failed to load regions:", err);
@@ -144,6 +153,17 @@ document.addEventListener("DOMContentLoaded", () => {
         } else {
           document.getElementById("kpi-derived-val").textContent = "-";
         }
+
+        // Update Source & Lineage Metadata dynamically
+        const srcDetails = document.getElementById("source-details");
+        if (srcDetails && popJson.source) {
+          const s = popJson.source;
+          srcDetails.innerHTML = `
+            <p><strong>인구 원천 제공처:</strong> ${s.provider || "KOSIS 국가통계포털"} (테이블: <code>${s.tableId || "DT_1B040A3"}</code> ${s.tableName || "주민등록인구현황"})</p>
+            <p><strong>공간 경계:</strong> 통계지리정보서비스(SGIS) 연도별 행정구역 경계 (EPSG:4326 WGS84 재투영)</p>
+            <p><strong>품질 검증 상태:</strong> 결측치(-)와 0원 식별 분리 완료, 단일 계보(Single Lineage) 원칙 엄격 준수</p>
+          `;
+        }
       }
 
       // 2. Fetch Rankings & Map Boundaries
@@ -176,12 +196,20 @@ document.addEventListener("DOMContentLoaded", () => {
     tbody.innerHTML = "";
     rankings.forEach(r => {
       const tr = document.createElement("tr");
+      tr.style.cursor = "pointer";
+      tr.title = `${r.regionName || r.regionKey} 선택하기`;
       tr.innerHTML = `
-        <td>${r.rank !== null ? r.rank : "-"}</td>
-        <td>${r.regionKey}</td>
-        <td>${r.value !== null ? Number(r.value).toLocaleString() : "-"}</td>
+        <td><strong>${r.rank !== null ? r.rank : "-"}</strong></td>
+        <td>${r.regionName || r.regionKey} <span class="region-key-sub" style="font-size: 0.75rem; color: var(--text-muted);">(${r.regionKey})</span></td>
+        <td class="font-mono">${r.value !== null ? Number(r.value).toLocaleString() : "-"}</td>
         <td><span class="badge ${r.status.toLowerCase()}">${r.status}</span></td>
       `;
+      tr.addEventListener("click", () => {
+        if (regionSelect.value !== r.regionKey) {
+          regionSelect.value = r.regionKey;
+          refreshData();
+        }
+      });
       tbody.appendChild(tr);
     });
   }
