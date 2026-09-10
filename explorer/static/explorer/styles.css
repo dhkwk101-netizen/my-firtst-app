@@ -614,6 +614,29 @@ body {
   z-index: 1;
 }
 
+.leaflet-interactive {
+  cursor: pointer;
+  transition: fill-opacity 0.15s ease, stroke-width 0.15s ease;
+}
+
+.leaflet-tooltip {
+  background: rgba(15, 23, 42, 0.92) !important;
+  backdrop-filter: blur(12px) !important;
+  border: 1px solid rgba(56, 189, 248, 0.4) !important;
+  border-radius: var(--radius-md) !important;
+  color: var(--text-primary) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5) !important;
+  padding: 0.5rem 0.75rem !important;
+}
+
+.leaflet-tooltip-top:before,
+.leaflet-tooltip-bottom:before,
+.leaflet-tooltip-left:before,
+.leaflet-tooltip-right:before {
+  border-top-color: rgba(56, 189, 248, 0.4) !important;
+}
+
+
 /* Ranking Header & Toolbar */
 .ranking-header-box {
   display: flex;

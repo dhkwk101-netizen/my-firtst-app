@@ -66,9 +66,9 @@ document.addEventListener("DOMContentLoaded", () => {
   // Initialize Leaflet Map
   function initMap() {
     mapInstance = L.map("map").setView(NATIONAL_VIEW.center, NATIONAL_VIEW.zoom);
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
-      attribution: "&copy; OpenStreetMap contributors &copy; CARTO",
-      maxZoom: 18,
+    L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}", {
+      attribution: "Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ",
+      maxZoom: 16,
     }).addTo(mapInstance);
   }
 
@@ -489,9 +489,9 @@ document.addEventListener("DOMContentLoaded", () => {
       renderRankings();
 
       // Update Leaflet Map Layer
-      if (rankJson.boundaryVersion) {
-        await updateMapLayer(rankJson.boundaryVersion, allRankings);
-      }
+      const boundaryUrl = rankJson.boundaryUrl || `/static/geo/boundaries/${year}.geojson`;
+      await updateMapLayer(boundaryUrl, allRankings);
+
 
       if (liveStatus) {
         liveStatus.textContent = `${currentRegion ? currentRegion.fullName : ''} ${year}년 데이터가 성공적으로 갱신되었습니다.`;
