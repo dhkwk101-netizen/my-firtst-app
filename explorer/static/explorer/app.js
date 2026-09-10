@@ -505,21 +505,44 @@ document.addEventListener("DOMContentLoaded", () => {
 
   let legendControl = null;
 
-  function getChoroplethColor(rank, totalCount) {
-    if (!rank || !totalCount) return "#334155";
+  function getChoroplethTier(rank, totalCount) {
+    if (!rank || !totalCount) return { color: "#1e293b", stroke: "#0f172a", label: "데이터 없음", tag: "없음" };
     const pct = rank / totalCount;
-    if (pct <= 0.10) return "#f59e0b"; // Top 10% (Amber / Gold)
-    if (pct <= 0.25) return "#38bdf8"; // Top 25% (Electric Cyan)
-    if (pct <= 0.50) return "#6366f1"; // Top 50% (Indigo)
-    if (pct <= 0.75) return "#8b5cf6"; // Top 75% (Purple)
-    return "#475569";                  // Lower 25% (Slate Blue)
+    if (rank === 1 || pct <= 0.001) {
+      return { color: "#ffffff", stroke: "#fbbf24", label: "상위 0.1% (전국 1위)", tag: "상위 0.1%" };
+    }
+    if (pct <= 0.01) {
+      return { color: "#fbbf24", stroke: "#f59e0b", label: "상위 1% 이내", tag: "상위 1%" };
+    }
+    if (pct <= 0.05) {
+      return { color: "#f97316", stroke: "#ea580c", label: "상위 1% ~ 5%", tag: "상위 5%" };
+    }
+    if (pct <= 0.10) {
+      return { color: "#f43f5e", stroke: "#e11d48", label: "상위 5% ~ 10%", tag: "상위 10%" };
+    }
+    if (pct <= 0.20) {
+      return { color: "#ec4899", stroke: "#db2777", label: "상위 10% ~ 20%", tag: "상위 20%" };
+    }
+    if (pct <= 0.30) {
+      return { color: "#a855f7", stroke: "#9333ea", label: "상위 20% ~ 30%", tag: "상위 30%" };
+    }
+    if (pct <= 0.40) {
+      return { color: "#6366f1", stroke: "#4f46e5", label: "상위 30% ~ 40%", tag: "상위 40%" };
+    }
+    if (pct <= 0.50) {
+      return { color: "#06b6d4", stroke: "#0891b2", label: "상위 40% ~ 50%", tag: "상위 50%" };
+    }
+    return { color: "#334155", stroke: "#1e293b", label: "하위 50%", tag: "하위 50%" };
   }
 
-  // Update Map Layer with True Choropleth Heatmap
+  // Update Map Layer with Granular 9-Tier Choropleth Heatmap
   async function updateMapLayer(boundaryUrl, rankings) {
     try {
       const res = await fetch(boundaryUrl);
-      if (!res.ok) return;
+      if (!res.ok) {
+        console.error("Failed to fetch boundary GeoJSON from:", boundaryUrl, res.status);
+        return;
+      }
       const geojson = await res.json();
 
       const rankMap = new Map(rankings.map(row => [row.featureKey, row]));
@@ -534,14 +557,14 @@ document.addEventListener("DOMContentLoaded", () => {
         const row = rankMap.get(feature.properties.featureKey);
         const hasVal = row && row.value !== null;
         const isSelected = row && row.regionKey === currentSelectedKey;
-        const fillColor = hasVal ? getChoroplethColor(row.rank, totalRanked) : "#1e293b";
+        const tier = getChoroplethTier(row ? row.rank : null, totalRanked);
 
         return {
-          fillColor: fillColor,
-          weight: isSelected ? 3 : 1.2,
+          fillColor: hasVal ? tier.color : "#1e293b",
+          weight: isSelected ? 3.5 : (row && row.rank === 1 ? 2.5 : 1.2),
           opacity: 1,
-          color: isSelected ? "#ffffff" : "#090d16",
-          fillOpacity: isSelected ? 0.95 : (hasVal ? 0.78 : 0.25),
+          color: isSelected ? "#ffffff" : (row && row.rank === 1 ? "#fbbf24" : "#090d16"),
+          fillOpacity: isSelected ? 0.98 : (hasVal ? 0.82 : 0.2),
         };
       }
 
@@ -553,21 +576,24 @@ document.addEventListener("DOMContentLoaded", () => {
           const valStr = row && row.value !== null ? `${Number(row.value).toLocaleString()} ${getIndicatorUnit(indicatorSelect.value)}` : "데이터 없음";
           const rankStr = row && row.rank ? `${row.rank}위` : "-";
           const provName = row && row.provinceName ? row.provinceName : "";
+          const tier = getChoroplethTier(row ? row.rank : null, totalRanked);
+          const topPct = row && row.rank ? ((row.rank / totalRanked) * 100).toFixed(1) : null;
+          const pctStr = topPct ? `(상위 ${topPct}%, ${tier.tag})` : "";
 
           layer.bindTooltip(`
             <div style="font-family: Inter, sans-serif; font-size: 0.85rem; padding: 2px;">
-              <strong>${provName} ${name}</strong><br>
-              <span style="color: #94a3b8;">전국 순위:</span> <strong>${rankStr}</strong> (총 ${totalRanked}개 중)<br>
-              <span style="color: #38bdf8;">지표값:</span> ${valStr}
+              <strong style="color: #ffffff;">${provName} ${name}</strong><br>
+              <span style="color: #94a3b8;">전국 순위:</span> <strong style="color: #fbbf24;">${rankStr}</strong> <span style="font-size: 0.75rem; color: #a5b4fc;">${pctStr}</span><br>
+              <span style="color: #38bdf8;">지표값:</span> <strong style="font-family: monospace;">${valStr}</strong>
             </div>
           `);
 
           layer.on("mouseover", e => {
             const l = e.target;
             l.setStyle({
-              weight: 2.8,
+              weight: 3,
               color: "#ffffff",
-              fillOpacity: 0.95,
+              fillOpacity: 0.98,
             });
             if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
               l.bringToFront();
@@ -586,7 +612,7 @@ document.addEventListener("DOMContentLoaded", () => {
         },
       }).addTo(mapInstance);
 
-      // Add or update Leaflet Choropleth Legend
+      // Add or update Granular 9-Tier Leaflet Legend
       if (legendControl) {
         mapInstance.removeControl(legendControl);
       }
@@ -595,12 +621,18 @@ document.addEventListener("DOMContentLoaded", () => {
       legendControl.onAdd = function () {
         const div = L.DomUtil.create("div", "map-legend");
         div.innerHTML = `
-          <strong style="display:block; margin-bottom: 5px; color: var(--text-primary);">전국 분위별 분포</strong>
-          <div><i style="background: #f59e0b;"></i> 상위 10% (최상위)</div>
-          <div><i style="background: #38bdf8;"></i> 상위 10% ~ 25%</div>
-          <div><i style="background: #6366f1;"></i> 상위 25% ~ 50%</div>
-          <div><i style="background: #8b5cf6;"></i> 하위 25% ~ 50%</div>
-          <div><i style="background: #475569;"></i> 하위 25% 이하</div>
+          <strong style="display:block; margin-bottom: 6px; color: #ffffff;">전국 순위 분위별 히트맵</strong>
+          <div class="legend-grid">
+            <div class="legend-item"><i style="background: #ffffff; border: 1.5px solid #fbbf24;"></i>상위 0.1% (1위)</div>
+            <div class="legend-item"><i style="background: #fbbf24;"></i>상위 1% 이내</div>
+            <div class="legend-item"><i style="background: #f97316;"></i>상위 1% ~ 5%</div>
+            <div class="legend-item"><i style="background: #f43f5e;"></i>상위 5% ~ 10%</div>
+            <div class="legend-item"><i style="background: #ec4899;"></i>상위 10% ~ 20%</div>
+            <div class="legend-item"><i style="background: #a855f7;"></i>상위 20% ~ 30%</div>
+            <div class="legend-item"><i style="background: #6366f1;"></i>상위 30% ~ 40%</div>
+            <div class="legend-item"><i style="background: #06b6d4;"></i>상위 40% ~ 50%</div>
+            <div class="legend-item"><i style="background: #334155;"></i>하위 50%</div>
+          </div>
         `;
         return div;
       };

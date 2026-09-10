@@ -668,7 +668,23 @@ body {
   margin-right: 8px !important;
   vertical-align: -2px !important;
   border-radius: 3px !important;
+  flex-shrink: 0;
 }
+
+.legend-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.35rem 0.85rem;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  font-size: 0.73rem;
+  color: var(--text-secondary);
+}
+
 
 
 
