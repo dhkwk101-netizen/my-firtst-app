@@ -1,0 +1,290 @@
+import hashlib
+import json
+from datetime import date
+from pathlib import Path
+from django.core.management.base import BaseCommand
+from django.db import transaction
+from django.utils import timezone
+from psycopg.types.range import Range
+
+from explorer.models import (
+    Dataset,
+    DatasetDimension,
+    DatasetFamily,
+    DatasetItemMapping,
+    DatasetRegionMapping,
+    DatasetVersion,
+    Indicator,
+    IngestionJob,
+    IngestionSlice,
+    Metric,
+    NormalizationRule,
+    Observation,
+    RawObservation,
+    Region,
+    TaxOwner,
+    Unit,
+)
+from explorer.pipeline.normalizer import normalize_job
+from explorer.pipeline.publisher import publish_job
+
+
+SEOUL_C1_TO_REGION = {
+    "15110AR0AB": ("KR_11110", "종로구"),
+    "15110AR0AC": ("KR_11140", "중구"),
+    "15110AR0AD": ("KR_11170", "용산구"),
+    "15110AR0AE": ("KR_11200", "성동구"),
+    "15110AR0AF": ("KR_11215", "광진구"),
+    "15110AR0AG": ("KR_11230", "동대문구"),
+    "15110AR0AH": ("KR_11260", "중랑구"),
+    "15110AR0AI": ("KR_11290", "성북구"),
+    "15110AR0AJ": ("KR_11305", "강북구"),
+    "15110AR0AK": ("KR_11320", "도봉구"),
+    "15110AR0AL": ("KR_11350", "노원구"),
+    "15110AR0AM": ("KR_11380", "은평구"),
+    "15110AR0AN": ("KR_11410", "서대문구"),
+    "15110AR0AO": ("KR_11440", "마포구"),
+    "15110AR0AP": ("KR_11470", "양천구"),
+    "15110AR0AQ": ("KR_11500", "강서구"),
+    "15110AR0AR": ("KR_11530", "구로구"),
+    "15110AR0AS": ("KR_11545", "금천구"),
+    "15110AR0AT": ("KR_11560", "영등포구"),
+    "15110AR0AU": ("KR_11590", "동작구"),
+    "15110AR0AV": ("KR_11620", "관악구"),
+    "15110AR0AW": ("KR_11650", "서초구"),
+    "15110AR0AX": ("KR_11680", "강남구"),
+    "15110AR0AY": ("KR_11710", "송파구"),
+    "15110AR0AZ": ("KR_11740", "강동구"),
+}
+
+
+class Command(BaseCommand):
+    help = "Ingest official 2010-2024 acquisition tax for all 25 Seoul autonomous districts from KOSIS (TX_11007_A058)"
+
+    def handle(self, *args, **options):
+        raw_file = Path("var/raw/kosis_seoul_districts_tax_2010_2024.json")
+        if not raw_file.exists():
+            self.stderr.write(self.style.ERROR(f"File {raw_file} not found."))
+            return
+
+        with open(raw_file, "r", encoding="utf-8") as f:
+            raw_data = json.load(f)
+
+        self.stdout.write(f"Loaded {len(raw_data)} rows from KOSIS Seoul tax dataset.")
+
+        # Filter only the 25 autonomous districts (exclude Sum/Total and Seoul Metropolitan City total)
+        district_rows = [
+            r for r in raw_data
+            if r.get("C1") in SEOUL_C1_TO_REGION
+        ]
+        self.stdout.write(f"Filtered {len(district_rows)} district rows across 25 autonomous districts (2010-2024).")
+
+        with transaction.atomic():
+            # 1. Semantic Entities
+            unit_krw, _ = Unit.objects.get_or_create(
+                unit_key="KRW",
+                defaults={"name": "원", "dimension": "CURRENCY", "symbol": "원"},
+            )
+            unit_thousand_krw, _ = Unit.objects.get_or_create(
+                unit_key="THOUSAND_KRW",
+                defaults={"name": "천원", "dimension": "CURRENCY", "symbol": "천원"},
+            )
+            NormalizationRule.objects.get_or_create(
+                rule_key="THOUSAND_KRW_TO_KRW",
+                defaults={
+                    "rule_type": "UNIT_SCALE",
+                    "parameters": {"source_unit": "THOUSAND_KRW", "target_unit": "KRW", "multiplier": 1000},
+                    "checksum": hashlib.sha256(b"THOUSAND_KRW_TO_KRW").hexdigest(),
+                    "version": 1,
+                    "status": "ACTIVE",
+                },
+            )
+            metric_col, _ = Metric.objects.get_or_create(
+                metric_key="COLLECTED",
+                defaults={"name": "징수액", "description": "실제 징수된 지방세 세입 결산액"},
+            )
+            tax_owner_basic, _ = TaxOwner.objects.get_or_create(
+                tax_owner_key="BASIC_LOCAL_GOV",
+                defaults={"name": "시·군·구청장", "jurisdiction_level": "BASIC_LOCAL_GOVERNMENT"},
+            )
+            ind_tax, _ = Indicator.objects.get_or_create(
+                indicator_key="ACQUISITION_TAX",
+                defaults={
+                    "name": "취득세",
+                    "description": "부동산 및 차량 등 취득 행위에 부과되는 지방세(시세/도세)",
+                    "category": "TAX",
+                    "canonical_unit": unit_krw,
+                    "value_type": "CURRENCY",
+                    "aggregation_method": "SUM",
+                    "geography_requirement": "MANDATORY",
+                    "default_frequency": "YEAR",
+                    "source_type": "OFFICIAL",
+                    "status": "ACTIVE",
+                },
+            )
+
+            # 2. Dataset Catalog Setup for Seoul Districts Tax
+            family, _ = DatasetFamily.objects.get_or_create(
+                family_key="LOCAL_TAX_FAMILY",
+                defaults={"name": "지방세 부과징수실적", "description": "기초자치단체별 지방세 세목별 부과징수 결산"},
+            )
+            dataset, _ = Dataset.objects.get_or_create(
+                dataset_key="KOSIS_SEOUL_DISTRICTS_TAX",
+                defaults={
+                    "family": family,
+                    "source_provider": "KOSIS",
+                    "source_org_id": "110",
+                    "source_table_id": "TX_11007_A058",
+                    "source_table_name": "서울특별시 구별 지방세 징수실적(시세)",
+                    "geography_level": "BASIC_LOCAL_GOVERNMENT",
+                    "frequency": "YEAR",
+                },
+            )
+            version, _ = DatasetVersion.objects.get_or_create(
+                dataset=dataset,
+                version=1,
+                defaults={
+                    "status": "ACTIVE",
+                    "available_period": Range(date(2010, 1, 1), date(2025, 1, 1), "[)"),
+                    "metadata_checksum": hashlib.sha256(b"KOSIS_TX_11007_A058_v1").hexdigest(),
+                    "metadata_snapshot": {"tableId": "TX_11007_A058", "orgId": "110"},
+                },
+            )
+
+            # Dimensions
+            DatasetDimension.objects.get_or_create(
+                dataset_version=version,
+                semantic_dimension="REGION",
+                defaults={
+                    "source_dimension": "c1",
+                    "required": True,
+                    "selection_strategy": "ALL_MAPPED",
+                    "ordinal": 1,
+                },
+            )
+            DatasetDimension.objects.get_or_create(
+                dataset_version=version,
+                semantic_dimension="TAX_TYPE",
+                defaults={
+                    "source_dimension": "c2",
+                    "required": True,
+                    "selection_strategy": "FIXED",
+                    "default_value": "15110AD6ABAN",
+                    "ordinal": 2,
+                },
+            )
+
+            # Item Mapping: 16110ABC9 (특별시/징수액) -> ACQUISITION_TAX / COLLECTED
+            DatasetItemMapping.objects.get_or_create(
+                dataset_version=version,
+                source_item_id="16110ABC9",
+                defaults={
+                    "source_item_name": "특별시세 징수액",
+                    "indicator": ind_tax,
+                    "metric": metric_col,
+                    "tax_owner": tax_owner_basic,
+                    "source_unit_id": "THOUSAND_KRW",
+                    "valid_period": Range(date(2010, 1, 1), None, "[)"),
+                    "comparability_status": "COMPARABLE",
+                },
+            )
+
+            # Region Mappings for all 25 districts
+            for c1_code, (region_key, dist_name) in SEOUL_C1_TO_REGION.items():
+                reg = Region.objects.get(region_key=region_key)
+                DatasetRegionMapping.objects.get_or_create(
+                    dataset_version=version,
+                    source_dimension="c1",
+                    source_region_code=c1_code,
+                    defaults={
+                        "source_region_name": dist_name,
+                        "region": reg,
+                        "valid_period": Range(date(2010, 1, 1), None, "[)"),
+                        "mapping_method": "DIRECT",
+                        "approved_at": timezone.now(),
+                    },
+                )
+
+            # 3. Ingestion Job & Slice
+            job, _ = IngestionJob.objects.get_or_create(
+                dataset_version=version,
+                idempotency_key="LIVE_KOSIS_SEOUL_TAX_2010_2024",
+                defaults={
+                    "job_type": "FULL_BACKFILL",
+                    "status": "RUNNING",
+                    "started_at": timezone.now(),
+                    "raw_row_count": len(district_rows),
+                },
+            )
+            slice_row, _ = IngestionSlice.objects.get_or_create(
+                ingestion_job=job,
+                slice_key="SLICE_KOSIS_SEOUL_TAX_2010_2024",
+                defaults={
+                    "request_parameters": {
+                        "orgId": "110",
+                        "tblId": "TX_11007_A058",
+                        "itmId": "ALL",
+                        "objL1": "ALL",
+                        "objL2": "15110AD6ABAN",
+                        "prdSe": "Y",
+                        "startPrdDe": "2010",
+                        "endPrdDe": "2024",
+                    },
+                    "status": "SUCCESS",
+                },
+            )
+
+            # Clean previous run observations
+            existing_raw_ids = RawObservation.objects.filter(ingestion_job=job).values_list("id", flat=True)
+            Observation.objects.filter(source_raw_observation_id__in=existing_raw_ids).delete()
+            RawObservation.objects.filter(ingestion_job=job).delete()
+
+            raw_obs_to_create = []
+            for r in district_rows:
+                row_hash = hashlib.sha256(
+                    f"{r.get('PRD_DE')}_{r.get('C1')}_{r.get('C2')}_{r.get('ITM_ID')}_{r.get('DT')}".encode("utf-8")
+                ).hexdigest()
+                raw_obs_to_create.append(
+                    RawObservation(
+                        ingestion_job=job,
+                        ingestion_slice=slice_row,
+                        dataset_version=version,
+                        org_id=r.get("ORG_ID", "110"),
+                        tbl_id=r.get("TBL_ID", "TX_11007_A058"),
+                        c1=r.get("C1", ""),
+                        c1_nm=r.get("C1_NM", ""),
+                        c2=r.get("C2", ""),
+                        c2_nm=r.get("C2_NM", ""),
+                        itm_id=r.get("ITM_ID", ""),
+                        itm_nm=r.get("ITM_NM", "징수액"),
+                        unit_id="THOUSAND_KRW",
+                        unit_nm=r.get("UNIT_NM", "천원"),
+                        prd_se="Y",
+                        prd_de=r.get("PRD_DE", ""),
+                        dt=r.get("DT", ""),
+                        raw_payload=r,
+                        source_row_hash=row_hash,
+                        quality_status="VALIDATED",
+                    )
+                )
+
+            RawObservation.objects.bulk_create(raw_obs_to_create)
+            job.raw_row_count = len(raw_obs_to_create)
+            job.save(update_fields=["raw_row_count"])
+
+        self.stdout.write(f"Inserted {len(raw_obs_to_create)} raw tax observations across all 25 Seoul districts.")
+
+        # 4. Normalize
+        self.stdout.write("Normalizing Seoul tax raw observations...")
+        norm_res = normalize_job(job.id)
+        self.stdout.write(f"Normalized {norm_res.normalized_count} observations (failures: {norm_res.failed_count}).")
+
+        # 5. Publish & Calculate Derived 1인당 취득세
+        self.stdout.write("Publishing observations & calculating derived 1인당 취득세...")
+        pub_res = publish_job(job.id)
+        self.stdout.write(
+            self.style.SUCCESS(
+                f"Published {pub_res.published_count} tax observations, "
+                f"derived {pub_res.derived_count} per-capita tax observations across Seoul districts!"
+            )
+        )

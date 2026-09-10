@@ -82,6 +82,16 @@ def publish_job(job_id: int) -> PublishResult:
                             if pop_obs and pop_obs.numeric_value:
                                 per_cap_val = calculate_per_capita(staged.numeric_value, pop_obs.numeric_value)
                                 if per_cap_val is not None:
+                                    # Supersede any existing active derived observation
+                                    Observation.objects.filter(
+                                        region=staged.region,
+                                        period=staged.period,
+                                        indicator=deriv.indicator,
+                                        metric=staged.metric,
+                                        status="PUBLISHED",
+                                        superseded_at__isnull=True,
+                                    ).update(status="SUPERSEDED", superseded_at=now)
+
                                     derived_obs = Observation.objects.create(
                                         region=staged.region,
                                         period=staged.period,
