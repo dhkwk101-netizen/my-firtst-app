@@ -121,3 +121,39 @@ def make_region_and_period(year=2024):
         },
     )
     return region, period, indicator, metric, tax_owner, unit
+
+
+def make_published_series():
+    from decimal import Decimal
+    from explorer.models import Observation, RawObservation
+
+    region, period, indicator, metric, tax_owner, unit = make_region_and_period(2024)
+    job, slice_row = make_job_and_slice("TEST_SERIES_JOB")
+    raw = RawObservation.objects.create(
+        ingestion_job=job,
+        ingestion_slice=slice_row,
+        dataset_version=job.dataset_version,
+        org_id="TEST_ORG",
+        tbl_id="TEST_TBL",
+        itm_id="TEST_ITM",
+        prd_se="Y",
+        prd_de="2024",
+        dt="1000",
+        source_row_hash="hash_series_raw",
+    )
+    obs = Observation.objects.create(
+        region=region,
+        period=period,
+        indicator=indicator,
+        metric=metric,
+        tax_owner=tax_owner,
+        numeric_value=Decimal("1000"),
+        canonical_unit=unit,
+        raw_value="1000",
+        status="PUBLISHED",
+        quality_status="PASSED",
+        source_raw_observation=raw,
+        source_dataset_version=job.dataset_version,
+        ingestion_job=job,
+    )
+    return region, indicator
