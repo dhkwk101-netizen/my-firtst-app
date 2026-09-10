@@ -101,6 +101,7 @@ def query_series(
             if obs.source_dataset_version:
                 ds = obs.source_dataset_version.dataset
                 source_info = {
+                    "derived": False,
                     "provider": ds.source_provider,
                     "tableId": ds.source_table_id,
                     "tableName": ds.source_table_name,
@@ -108,11 +109,18 @@ def query_series(
                     "unitSymbol": obs.canonical_unit.symbol,
                 }
             elif obs.derived_indicator:
+                inputs_list = []
+                for inp in obs.inputs.select_related("input_observation__indicator"):
+                    inputs_list.append({
+                        "role": inp.input_role,
+                        "indicatorKey": inp.input_observation.indicator.indicator_key,
+                    })
                 source_info = {
                     "derived": True,
                     "evaluator": obs.derived_indicator.evaluator_key,
                     "unit": obs.canonical_unit.name,
                     "unitSymbol": obs.canonical_unit.symbol,
+                    "inputs": inputs_list,
                 }
 
     return {
@@ -132,7 +140,7 @@ def query_rankings(
     tax_owner_key: str | None = None,
 ) -> dict[str, Any]:
     boundary_set = BoundarySet.objects.filter(reference_year=year, status="ACTIVE").first()
-    boundary_version = boundary_set.asset_uri if boundary_set else f"/static/geo/boundaries/{year}.geojson"
+    boundary_version = str(year)
 
     # Pre-fetch boundary features
     feature_map: dict[int, str] = {}
@@ -182,5 +190,7 @@ def query_rankings(
         "indicatorKey": indicator_key,
         "year": year,
         "boundaryVersion": boundary_version,
+        "boundaryUrl": boundary_set.asset_uri if boundary_set else f"/static/geo/boundaries/{year}.geojson",
+        "values": rankings,
         "rankings": rankings,
     }

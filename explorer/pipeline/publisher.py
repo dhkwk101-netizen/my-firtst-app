@@ -72,12 +72,11 @@ def publish_job(job_id: int) -> PublishResult:
         active_derived = DerivedIndicator.objects.filter(status="ACTIVE").select_related("indicator", "output_unit")
         for deriv in active_derived:
             if deriv.evaluator_key == "PER_CAPITA":
-                # Find input requirements
                 tax_input = deriv.inputs.filter(role="TAX").first()
                 pop_input = deriv.inputs.filter(role="POPULATION").first()
                 if tax_input and pop_input:
-                    # For newly published rows matching tax input, look for corresponding population
                     for staged in staged_rows:
+                        # Case 1: staged row is tax
                         if staged.indicator == tax_input.input_indicator and staged.metric == tax_input.input_metric:
                             pop_obs = Observation.objects.filter(
                                 region=staged.region,
@@ -114,6 +113,44 @@ def publish_job(job_id: int) -> PublishResult:
                                         input_role="POPULATION",
                                     )
                                     derived_count += 1
+                        # Case 2: staged row is population
+                        elif staged.indicator == pop_input.input_indicator and staged.metric == pop_input.input_metric:
+                            tax_obs_qs = Observation.objects.filter(
+                                region=staged.region,
+                                period=staged.period,
+                                indicator=tax_input.input_indicator,
+                                metric=tax_input.input_metric,
+                                status="PUBLISHED",
+                                superseded_at__isnull=True,
+                            )
+                            for tax_obs in tax_obs_qs:
+                                if tax_obs.numeric_value:
+                                    per_cap_val = calculate_per_capita(tax_obs.numeric_value, staged.numeric_value)
+                                    if per_cap_val is not None:
+                                        derived_obs = Observation.objects.create(
+                                            region=staged.region,
+                                            period=staged.period,
+                                            indicator=deriv.indicator,
+                                            metric=tax_obs.metric,
+                                            tax_owner=tax_obs.tax_owner,
+                                            numeric_value=per_cap_val,
+                                            canonical_unit=deriv.output_unit,
+                                            raw_value=str(per_cap_val),
+                                            status="PUBLISHED",
+                                            derived_indicator=deriv,
+                                            published_at=now,
+                                        )
+                                        ObservationInput.objects.create(
+                                            derived_observation=derived_obs,
+                                            input_observation=tax_obs,
+                                            input_role="TAX",
+                                        )
+                                        ObservationInput.objects.create(
+                                            derived_observation=derived_obs,
+                                            input_observation=staged,
+                                            input_role="POPULATION",
+                                        )
+                                        derived_count += 1
 
         job.status = "SUCCESS"
         job.finished_at = now
