@@ -5,6 +5,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>대한민국 기초자치단체 지역 데이터 탐색기 (2010–2024)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
         integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
   <link rel="stylesheet" href="{% static 'explorer/styles.css' %}">
@@ -16,24 +19,33 @@
 <body>
   <header class="app-header">
     <div class="header-inner">
-      <h1>지역 데이터 탐색기</h1>
-      <p class="subtitle">2010–2024 대한민국 기초자치단체 취득세 · 인구 · 1인당 지표 및 행정구역 이력 분석</p>
+      <div class="header-brand">
+        <h1>지자체 지역통계 및 재정·인구 탐색기</h1>
+        <p class="subtitle">2010–2024 대한민국 기초자치단체 취득세 · 인구 · 1인당 지표 및 행정구역 이력 분석</p>
+      </div>
+      <div class="header-badges">
+        <span class="status-badge">
+          <span class="status-dot"></span>
+          실시간 연계 완료
+        </span>
+        <span class="version-badge">2010–2024 (15개년)</span>
+      </div>
     </div>
   </header>
 
   <main class="main-container">
     <section class="controls-panel" aria-label="필터 컨트롤">
       <div class="control-group">
-        <label for="region-select">지역 선택</label>
+        <label for="region-select">지역 선택 (시·군·구)</label>
         <select id="region-select" aria-label="분석 대상 자치단체">
           <option value="">지역을 선택하세요</option>
         </select>
       </div>
 
       <div class="control-group">
-        <label for="year-select">기준 연도</label>
+        <label for="year-select">지도 및 순위 기준 연도</label>
         <select id="year-select" aria-label="지도 및 순위 기준 연도">
-          <option value="2024" selected>2024년</option>
+          <option value="2024" selected>2024년 (최신)</option>
           <option value="2023">2023년</option>
           <option value="2022">2022년</option>
           <option value="2021">2021년</option>
@@ -52,7 +64,7 @@
       </div>
 
       <div class="control-group">
-        <label for="indicator-select">지표 선택</label>
+        <label for="indicator-select">주요 분석 지표</label>
         <select id="indicator-select" aria-label="주요 분석 지표">
           <option value="ACQUISITION_TAX" selected>취득세 (원천)</option>
           <option value="POPULATION">주민등록 인구 (원천)</option>
@@ -64,15 +76,15 @@
     <!-- KPI Cards -->
     <section class="kpi-grid" aria-label="주요 지표 요약">
       <article class="kpi-card" id="kpi-tax">
-        <span class="kpi-label">선택 연도 세입액</span>
+        <span class="kpi-label">선택 연도 취득세 세입액</span>
         <span class="kpi-value" id="kpi-tax-val">-</span>
       </article>
       <article class="kpi-card" id="kpi-pop">
-        <span class="kpi-label">선택 연도 인구수</span>
+        <span class="kpi-label">선택 연도 주민등록 인구수</span>
         <span class="kpi-value" id="kpi-pop-val">-</span>
       </article>
       <article class="kpi-card" id="kpi-derived">
-        <span class="kpi-label">1인당 세액</span>
+        <span class="kpi-label">1인당 평균 취득세액</span>
         <span class="kpi-value" id="kpi-derived-val">-</span>
       </article>
     </section>
@@ -96,11 +108,11 @@
     <!-- Map & Ranking Split View -->
     <section class="geo-ranking-section" aria-label="행정구역 지도 및 순위">
       <div class="map-card">
-        <h2>행정구역 경계 지도 (<span id="map-year-label">2024</span>년)</h2>
+        <h2>전국 행정구역 공간분포 히트맵 (<span id="map-year-label">2024</span>년)</h2>
         <div id="map"></div>
       </div>
       <div class="ranking-card">
-        <h2>전국 기초자치단체 순위</h2>
+        <h2>전국 기초자치단체 순위표</h2>
         <div class="table-container">
           <table id="ranking-table">
             <thead>
@@ -123,11 +135,11 @@
 
     <!-- Source Traceability Panel -->
     <section class="source-panel" aria-label="데이터 출처 및 메타데이터">
-      <h2>데이터 출처 및 계보 (Source Traceability)</h2>
+      <h2>데이터 출처 및 계보 (Data Lineage & Provenance)</h2>
       <div id="source-details">
-        <p><strong>원천 제공처:</strong> 통계청 KOSIS OpenAPI & 행정안전부 지방세정</p>
-        <p><strong>경계 데이터:</strong> 통계지리정보서비스(SGIS) 행정구역 경계</p>
-        <p><strong>품질 검증:</strong> 결측치(-)와 0원 구분, 시점별 행정구역 매핑 적용 완료</p>
+        <p><strong>원천 제공처:</strong> 통계청 KOSIS 국가통계포털 OpenAPI & 행정안전부 지방세정</p>
+        <p><strong>공간 경계:</strong> 통계지리정보서비스(SGIS) 연도별 행정구역 경계 (EPSG:4326 재투영)</p>
+        <p><strong>품질 검증:</strong> 결측치(-)와 0원 식별 분리, 단일 계보(Single Lineage) 원칙 준수</p>
       </div>
     </section>
   </main>
