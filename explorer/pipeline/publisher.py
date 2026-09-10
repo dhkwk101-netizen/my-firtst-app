@@ -43,30 +43,23 @@ def publish_job(job_id: int) -> PublishResult:
     derived_count = 0
 
     with transaction.atomic():
-        staged_rows = list(staged_qs.select_for_update())
+        staged_rows = list(staged_qs)
+        staged_ids = [s.id for s in staged_rows]
 
-        for staged in staged_rows:
-            # Supersede existing active rows for this identity
-            conflicts = Observation.objects.select_for_update().filter(
-                region=staged.region,
-                period=staged.period,
-                indicator=staged.indicator,
-                metric=staged.metric,
-                tax_owner=staged.tax_owner,
-                status="PUBLISHED",
-                superseded_at__isnull=True,
-            ).exclude(id=staged.id)
+        # Supersede existing active rows in bulk
+        conflicts = Observation.objects.filter(
+            region__in=[s.region_id for s in staged_rows],
+            period__in=[s.period_id for s in staged_rows],
+            indicator__in=[s.indicator_id for s in staged_rows],
+            metric__in=[s.metric_id for s in staged_rows],
+            status="PUBLISHED",
+            superseded_at__isnull=True,
+        ).exclude(id__in=staged_ids)
 
-            for old_row in conflicts:
-                old_row.status = "SUPERSEDED"
-                old_row.superseded_at = now
-                old_row.save(update_fields=["status", "superseded_at"])
-                superseded_count += 1
+        superseded_count = conflicts.update(status="SUPERSEDED", superseded_at=now)
 
-            staged.status = "PUBLISHED"
-            staged.published_at = now
-            staged.save(update_fields=["status", "published_at"])
-            published_count += 1
+        # Publish staged rows in bulk
+        published_count = staged_qs.update(status="PUBLISHED", published_at=now)
 
         # Check and compute active DerivedIndicators (e.g. Per Capita)
         active_derived = DerivedIndicator.objects.filter(status="ACTIVE").select_related("indicator", "output_unit")
@@ -114,17 +107,22 @@ def publish_job(job_id: int) -> PublishResult:
                                     )
                                     derived_count += 1
                         # Case 2: staged row is population
-                        elif staged.indicator == pop_input.input_indicator and staged.metric == pop_input.input_metric:
-                            tax_obs_qs = Observation.objects.filter(
-                                region=staged.region,
-                                period=staged.period,
-                                indicator=tax_input.input_indicator,
-                                metric=tax_input.input_metric,
-                                status="PUBLISHED",
-                                superseded_at__isnull=True,
-                            )
-                            for tax_obs in tax_obs_qs:
-                                if tax_obs.numeric_value:
+                        elif staged.indicator_id == pop_input.input_indicator_id and staged.metric_id == pop_input.input_metric_id:
+                            # Pre-index existing published tax observations for these periods/regions
+                            tax_map = {
+                                (t.region_id, t.period_id): t
+                                for t in Observation.objects.filter(
+                                    indicator=tax_input.input_indicator,
+                                    metric=tax_input.input_metric,
+                                    status="PUBLISHED",
+                                    superseded_at__isnull=True,
+                                    region_id__in=[s.region_id for s in staged_rows],
+                                    period_id__in=[s.period_id for s in staged_rows],
+                                )
+                            }
+                            for staged in staged_rows:
+                                tax_obs = tax_map.get((staged.region_id, staged.period_id))
+                                if tax_obs and tax_obs.numeric_value and staged.numeric_value:
                                     per_cap_val = calculate_per_capita(tax_obs.numeric_value, staged.numeric_value)
                                     if per_cap_val is not None:
                                         derived_obs = Observation.objects.create(
@@ -151,6 +149,7 @@ def publish_job(job_id: int) -> PublishResult:
                                             input_role="POPULATION",
                                         )
                                         derived_count += 1
+                            break
 
         job.status = "SUCCESS"
         job.finished_at = now
