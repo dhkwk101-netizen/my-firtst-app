@@ -503,7 +503,19 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // Update Map Layer
+  let legendControl = null;
+
+  function getChoroplethColor(rank, totalCount) {
+    if (!rank || !totalCount) return "#334155";
+    const pct = rank / totalCount;
+    if (pct <= 0.10) return "#f59e0b"; // Top 10% (Amber / Gold)
+    if (pct <= 0.25) return "#38bdf8"; // Top 25% (Electric Cyan)
+    if (pct <= 0.50) return "#6366f1"; // Top 50% (Indigo)
+    if (pct <= 0.75) return "#8b5cf6"; // Top 75% (Purple)
+    return "#475569";                  // Lower 25% (Slate Blue)
+  }
+
+  // Update Map Layer with True Choropleth Heatmap
   async function updateMapLayer(boundaryUrl, rankings) {
     try {
       const res = await fetch(boundaryUrl);
@@ -511,35 +523,60 @@ document.addEventListener("DOMContentLoaded", () => {
       const geojson = await res.json();
 
       const rankMap = new Map(rankings.map(row => [row.featureKey, row]));
+      const totalRanked = rankings.filter(r => r.value !== null).length;
+      const currentSelectedKey = regionSelect.value;
 
       if (geoLayer) {
         mapInstance.removeLayer(geoLayer);
       }
 
+      function getFeatureStyle(feature) {
+        const row = rankMap.get(feature.properties.featureKey);
+        const hasVal = row && row.value !== null;
+        const isSelected = row && row.regionKey === currentSelectedKey;
+        const fillColor = hasVal ? getChoroplethColor(row.rank, totalRanked) : "#1e293b";
+
+        return {
+          fillColor: fillColor,
+          weight: isSelected ? 3 : 1.2,
+          opacity: 1,
+          color: isSelected ? "#ffffff" : "#090d16",
+          fillOpacity: isSelected ? 0.95 : (hasVal ? 0.78 : 0.25),
+        };
+      }
+
       geoLayer = L.geoJSON(geojson, {
-        style: feature => {
-          const row = rankMap.get(feature.properties.featureKey);
-          const hasVal = row && row.value !== null;
-          return {
-            fillColor: hasVal ? "#38bdf8" : "#64748b",
-            weight: 1.5,
-            opacity: 1,
-            color: "#1e293b",
-            fillOpacity: hasVal ? 0.75 : 0.2,
-          };
-        },
+        style: getFeatureStyle,
         onEachFeature: (feature, layer) => {
           const row = rankMap.get(feature.properties.featureKey);
           const name = feature.properties.name || feature.properties.featureKey;
           const valStr = row && row.value !== null ? `${Number(row.value).toLocaleString()} ${getIndicatorUnit(indicatorSelect.value)}` : "데이터 없음";
           const rankStr = row && row.rank ? `${row.rank}위` : "-";
+          const provName = row && row.provinceName ? row.provinceName : "";
+
           layer.bindTooltip(`
             <div style="font-family: Inter, sans-serif; font-size: 0.85rem; padding: 2px;">
-              <strong>${name}</strong><br>
-              <span style="color: #94a3b8;">전국 순위:</span> <strong>${rankStr}</strong><br>
+              <strong>${provName} ${name}</strong><br>
+              <span style="color: #94a3b8;">전국 순위:</span> <strong>${rankStr}</strong> (총 ${totalRanked}개 중)<br>
               <span style="color: #38bdf8;">지표값:</span> ${valStr}
             </div>
           `);
+
+          layer.on("mouseover", e => {
+            const l = e.target;
+            l.setStyle({
+              weight: 2.8,
+              color: "#ffffff",
+              fillOpacity: 0.95,
+            });
+            if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
+              l.bringToFront();
+            }
+          });
+
+          layer.on("mouseout", e => {
+            geoLayer.resetStyle(e.target);
+          });
 
           layer.on("click", () => {
             if (row && row.regionKey) {
@@ -548,6 +585,27 @@ document.addEventListener("DOMContentLoaded", () => {
           });
         },
       }).addTo(mapInstance);
+
+      // Add or update Leaflet Choropleth Legend
+      if (legendControl) {
+        mapInstance.removeControl(legendControl);
+      }
+
+      legendControl = L.control({ position: "bottomright" });
+      legendControl.onAdd = function () {
+        const div = L.DomUtil.create("div", "map-legend");
+        div.innerHTML = `
+          <strong style="display:block; margin-bottom: 5px; color: var(--text-primary);">전국 분위별 분포</strong>
+          <div><i style="background: #f59e0b;"></i> 상위 10% (최상위)</div>
+          <div><i style="background: #38bdf8;"></i> 상위 10% ~ 25%</div>
+          <div><i style="background: #6366f1;"></i> 상위 25% ~ 50%</div>
+          <div><i style="background: #8b5cf6;"></i> 하위 25% ~ 50%</div>
+          <div><i style="background: #475569;"></i> 하위 25% 이하</div>
+        `;
+        return div;
+      };
+      legendControl.addTo(mapInstance);
+
     } catch (err) {
       console.warn("Boundary layer update warning:", err);
     }
