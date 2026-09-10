@@ -1,0 +1,18 @@
+[
+  {
+    "ORG_ID": "TEST_ORG",
+    "TBL_ID": "TEST_TABLE",
+    "TBL_NM": "Synthetic contract table",
+    "C1": "TEST_REGION",
+    "C1_OBJ_NM": "Synthetic region axis",
+    "C1_NM": "Synthetic district",
+    "ITM_ID": "TEST_ITEM",
+    "ITM_NM": "Synthetic collected amount",
+    "UNIT_ID": "TEST_UNIT",
+    "UNIT_NM": "Synthetic currency unit",
+    "PRD_SE": "Y",
+    "PRD_DE": "2024",
+    "DT": "0",
+    "LST_CHN_DE": "20250101"
+  }
+]
