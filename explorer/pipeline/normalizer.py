@@ -84,13 +84,27 @@ def normalize_job(job_id: int) -> NormalizationResult:
     # Pre-fetch dimensions to check for fixed context
     dimensions = list(DatasetDimension.objects.filter(dataset_version=version))
     fixed_region_key = None
+    fixed_dim_filters: dict[str, str] = {}
     for dim in dimensions:
-        if dim.selection_strategy == "FIXED" and dim.semantic_dimension == "REGION":
-            fixed_region_key = dim.default_value
+        if dim.selection_strategy == "FIXED":
+            if dim.semantic_dimension == "REGION":
+                fixed_region_key = dim.default_value
+            elif dim.source_dimension:
+                fixed_dim_filters[dim.source_dimension.lower()] = dim.default_value
 
     observations_to_create = []
 
     for raw in raw_rows:
+        # Check if row satisfies any fixed source dimension requirements
+        skip_row = False
+        for src_dim, expected_val in fixed_dim_filters.items():
+            actual_val = getattr(raw, src_dim, None)
+            if actual_val is not None and actual_val != expected_val:
+                skip_row = True
+                break
+        if skip_row:
+            continue
+
         # 1. Locate Period
         period_key = f"Y_{raw.prd_de}" if raw.prd_se == "Y" else f"M_{raw.prd_de}"
         period = Period.objects.filter(period_key=period_key).first()
