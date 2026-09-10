@@ -4,8 +4,8 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "django-insecure-mvp-regional-data-explorer-dev-key")
-DEBUG = os.environ.get("DJANGO_DEBUG", "false").lower() == "true"
-ALLOWED_HOSTS = [value for value in os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",") if value]
+DEBUG = os.environ.get("DJANGO_DEBUG", "true").lower() == "true"
+ALLOWED_HOSTS = [value for value in os.environ.get("DJANGO_ALLOWED_HOSTS", "*").split(",") if value]
 
 ROOT_URLCONF = "config.urls"
 
