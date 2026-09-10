@@ -1,0 +1,32 @@
+[
+  {
+    "ORG_ID": "101",
+    "TBL_ID": "DT_10101_TAX_CITY",
+    "TBL_NM": "시군구별 세목별 세입 결산(시세)",
+    "PRD_SE": "Y",
+    "START_PRD_DE": "2010",
+    "END_PRD_DE": "2024",
+    "C1": "11010",
+    "C1_NM": "종로구",
+    "C1_OBJ_NM": "행정구역",
+    "ITM_ID": "1000",
+    "ITM_NM": "취득세",
+    "UNIT_ID": "1001",
+    "UNIT_NM": "천원"
+  },
+  {
+    "ORG_ID": "101",
+    "TBL_ID": "DT_10101_TAX_DISTRICT",
+    "TBL_NM": "시군구별 세목별 세입 결산(구세)",
+    "PRD_SE": "Y",
+    "START_PRD_DE": "2010",
+    "END_PRD_DE": "2024",
+    "C1": "11010",
+    "C1_NM": "종로구",
+    "C1_OBJ_NM": "행정구역",
+    "ITM_ID": "1000",
+    "ITM_NM": "취득세",
+    "UNIT_ID": "1001",
+    "UNIT_NM": "천원"
+  }
+]

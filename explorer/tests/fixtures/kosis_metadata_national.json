@@ -1,0 +1,17 @@
+[
+  {
+    "ORG_ID": "101",
+    "TBL_ID": "DT_10101_POPULATION",
+    "TBL_NM": "주민등록 인구 및 세대현황",
+    "PRD_SE": "Y",
+    "START_PRD_DE": "2010",
+    "END_PRD_DE": "2024",
+    "C1": "11010",
+    "C1_NM": "종로구",
+    "C1_OBJ_NM": "행정구역",
+    "ITM_ID": "T1",
+    "ITM_NM": "총인구수",
+    "UNIT_ID": "U1",
+    "UNIT_NM": "명"
+  }
+]
