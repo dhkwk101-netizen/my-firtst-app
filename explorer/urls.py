@@ -5,10 +5,12 @@ from explorer.api import (
     api_regions,
     api_series,
 )
+from explorer.views import index
 
 app_name = "explorer"
 
 urlpatterns = [
+    path("", index, name="index"),
     path("api/regions", api_regions, name="api_regions"),
     path("api/indicators", api_indicators, name="api_indicators"),
     path("api/series", api_series, name="api_series"),

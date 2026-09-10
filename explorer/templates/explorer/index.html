@@ -1,0 +1,139 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>대한민국 기초자치단체 지역 데이터 탐색기 (2010–2024)</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+  <link rel="stylesheet" href="{% static 'explorer/styles.css' %}">
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+          integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js"
+          crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="app-header">
+    <div class="header-inner">
+      <h1>지역 데이터 탐색기</h1>
+      <p class="subtitle">2010–2024 대한민국 기초자치단체 취득세 · 인구 · 1인당 지표 및 행정구역 이력 분석</p>
+    </div>
+  </header>
+
+  <main class="main-container">
+    <section class="controls-panel" aria-label="필터 컨트롤">
+      <div class="control-group">
+        <label for="region-select">지역 선택</label>
+        <select id="region-select" aria-label="분석 대상 자치단체">
+          <option value="">지역을 선택하세요</option>
+        </select>
+      </div>
+
+      <div class="control-group">
+        <label for="year-select">기준 연도</label>
+        <select id="year-select" aria-label="지도 및 순위 기준 연도">
+          <option value="2024" selected>2024년</option>
+          <option value="2023">2023년</option>
+          <option value="2022">2022년</option>
+          <option value="2021">2021년</option>
+          <option value="2020">2020년</option>
+          <option value="2019">2019년</option>
+          <option value="2018">2018년</option>
+          <option value="2017">2017년</option>
+          <option value="2016">2016년</option>
+          <option value="2015">2015년</option>
+          <option value="2014">2014년</option>
+          <option value="2013">2013년</option>
+          <option value="2012">2012년</option>
+          <option value="2011">2011년</option>
+          <option value="2010">2010년</option>
+        </select>
+      </div>
+
+      <div class="control-group">
+        <label for="indicator-select">지표 선택</label>
+        <select id="indicator-select" aria-label="주요 분석 지표">
+          <option value="ACQUISITION_TAX" selected>취득세 (원천)</option>
+          <option value="POPULATION">주민등록 인구 (원천)</option>
+          <option value="ACQUISITION_TAX_PER_CAPITA">1인당 취득세 (파생)</option>
+        </select>
+      </div>
+    </section>
+
+    <!-- KPI Cards -->
+    <section class="kpi-grid" aria-label="주요 지표 요약">
+      <article class="kpi-card" id="kpi-tax">
+        <span class="kpi-label">선택 연도 세입액</span>
+        <span class="kpi-value" id="kpi-tax-val">-</span>
+      </article>
+      <article class="kpi-card" id="kpi-pop">
+        <span class="kpi-label">선택 연도 인구수</span>
+        <span class="kpi-value" id="kpi-pop-val">-</span>
+      </article>
+      <article class="kpi-card" id="kpi-derived">
+        <span class="kpi-label">1인당 세액</span>
+        <span class="kpi-value" id="kpi-derived-val">-</span>
+      </article>
+    </section>
+
+    <!-- Trend Charts -->
+    <section class="charts-section" aria-label="시계열 추이 분석">
+      <div class="chart-card">
+        <h2>취득세 세입 추이 (2010–2024)</h2>
+        <div class="chart-container">
+          <canvas id="tax-chart"></canvas>
+        </div>
+      </div>
+      <div class="chart-card">
+        <h2>주민등록 인구 추이 (2010–2024)</h2>
+        <div class="chart-container">
+          <canvas id="population-chart"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- Map & Ranking Split View -->
+    <section class="geo-ranking-section" aria-label="행정구역 지도 및 순위">
+      <div class="map-card">
+        <h2>행정구역 경계 지도 (<span id="map-year-label">2024</span>년)</h2>
+        <div id="map"></div>
+      </div>
+      <div class="ranking-card">
+        <h2>전국 기초자치단체 순위</h2>
+        <div class="table-container">
+          <table id="ranking-table">
+            <thead>
+              <tr>
+                <th>순위</th>
+                <th>지역</th>
+                <th>지표값</th>
+                <th>상태</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td colspan="4" class="text-center">데이터를 불러오는 중입니다...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Source Traceability Panel -->
+    <section class="source-panel" aria-label="데이터 출처 및 메타데이터">
+      <h2>데이터 출처 및 계보 (Source Traceability)</h2>
+      <div id="source-details">
+        <p><strong>원천 제공처:</strong> 통계청 KOSIS OpenAPI & 행정안전부 지방세정</p>
+        <p><strong>경계 데이터:</strong> 통계지리정보서비스(SGIS) 행정구역 경계</p>
+        <p><strong>품질 검증:</strong> 결측치(-)와 0원 구분, 시점별 행정구역 매핑 적용 완료</p>
+      </div>
+    </section>
+  </main>
+
+  <div id="live-status" class="sr-only" aria-live="polite"></div>
+
+  <script src="{% static 'explorer/app.js' %}"></script>
+</body>
+</html>
