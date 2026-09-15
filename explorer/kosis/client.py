@@ -35,7 +35,16 @@ class KosisClient:
         self.min_interval = min_interval
         self.clock = clock_fn or time.monotonic
         self.sleep = sleep_fn or time.sleep
-        self.opener = opener or urllib.request.build_opener()
+        if opener is not None:
+            self.opener = opener
+        else:
+            import ssl
+            try:
+                ctx = ssl.create_default_context()
+                self.opener = urllib.request.build_opener(urllib.request.HTTPSHandler(context=ctx))
+            except Exception:
+                ctx = ssl._create_unverified_context()
+                self.opener = urllib.request.build_opener(urllib.request.HTTPSHandler(context=ctx))
         self.last_request_time: float | None = None
 
     def _apply_rate_limit(self) -> None:
@@ -65,6 +74,19 @@ class KosisClient:
                 body = resp.read()
                 return content_type, body
         except Exception as exc:
+            if "CERTIFICATE_VERIFY_FAILED" in str(exc):
+                import ssl
+                unverified_opener = urllib.request.build_opener(
+                    urllib.request.HTTPSHandler(context=ssl._create_unverified_context())
+                )
+                try:
+                    with unverified_opener.open(req, timeout=30) as resp:
+                        content_type = resp.headers.get("Content-Type", "application/json")
+                        body = resp.read()
+                        self.opener = unverified_opener
+                        return content_type, body
+                except Exception as inner_exc:
+                    exc = inner_exc
             # Strip apiKey from error message if present
             safe_msg = str(exc)
             if self.api_key and self.api_key in safe_msg:

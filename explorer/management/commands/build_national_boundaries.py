@@ -119,26 +119,7 @@ class Command(BaseCommand):
             feat_hash = hashlib.sha256(json.dumps(mapping(merged_geom), sort_keys=True).encode("utf-8")).hexdigest()
             region_features.append((reg, reg.region_key, feat_hash))
 
-        # Add mock test features if test regions exist in DB
-        for test_key, name, coords in [
-            ("TEST_REGION_A", "지역A", [[[126.97, 37.56], [126.98, 37.56], [126.98, 37.57], [126.97, 37.57], [126.97, 37.56]]]),
-            ("TEST_REGION_B", "지역B", [[[127.0, 37.56], [127.01, 37.56], [127.01, 37.57], [127.0, 37.57], [127.0, 37.56]]]),
-        ]:
-            test_reg = Region.objects.filter(region_key=test_key).first()
-            if test_reg:
-                feat_json = {
-                    "type": "Feature",
-                    "properties": {
-                        "featureKey": test_key,
-                        "regionId": test_reg.id,
-                        "regionKey": test_reg.region_key,
-                        "name": name,
-                    },
-                    "geometry": {"type": "Polygon", "coordinates": coords},
-                }
-                final_features.append(feat_json)
-                feat_hash = hashlib.sha256(json.dumps(feat_json["geometry"], sort_keys=True).encode("utf-8")).hexdigest()
-                region_features.append((test_reg, test_key, feat_hash))
+
 
         collection = {
             "type": "FeatureCollection",

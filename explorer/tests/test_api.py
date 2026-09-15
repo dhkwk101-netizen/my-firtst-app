@@ -74,3 +74,35 @@ class ApiTests(TestCase):
         self.assertEqual(payload.get("provinceCode"), "KR_11")
         self.assertIn("rankings", payload)
 
+    def test_series_supports_multiple_regions(self):
+        region, indicator = make_published_series()
+        response = self.client.get(
+            "/api/series",
+            {
+                "regionId": f"{region.region_key},KR_99999",
+                "indicatorId": indicator.indicator_key,
+                "from": "2024",
+                "to": "2024",
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertIn("values", payload)
+        self.assertEqual(payload["regionKeys"], [region.region_key, "KR_99999"])
+
+    def test_regional_dashboard_endpoint_both_routes_and_radar_scores(self):
+        region, indicator = make_published_series()
+        # Test hyphenated route
+        res1 = self.client.get("/api/regional-dashboard", {"regionId": region.region_key})
+        self.assertEqual(res1.status_code, 200)
+        data1 = res1.json()
+        self.assertIn("radarScores", data1)
+        self.assertIn("fiscalIndependence", data1["radarScores"])
+        self.assertIn("kpis", data1)
+
+        # Test underscore alias route
+        res2 = self.client.get("/api/regional_dashboard", {"regionId": region.region_key})
+        self.assertEqual(res2.status_code, 200)
+        data2 = res2.json()
+        self.assertIn("radarScores", data2)
+

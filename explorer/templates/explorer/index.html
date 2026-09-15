@@ -1,246 +1,1645 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="ko">
+<html class="light" lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>대한민국 기초자치단체 지역통계 및 재정·인구 탐색기 (2010–2024)</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
-  <link rel="stylesheet" href="{% static 'explorer/styles.css' %}">
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-          integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js"
-          crossorigin="anonymous"></script>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>대한민국 기초자치단체 지역통계 및 재정·인구 탐색기 ({{ min_year }}–{{ max_year }})</title>
+  <!-- Material Symbols Outlined -->
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com" rel="preconnect"/>
+  <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+  
+  <!-- Leaflet & Chart.js -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "primary": "#0284c7",
+            "primary-container": "#e0f2fe",
+            "on-primary": "#ffffff",
+            "on-primary-container": "#0369a1",
+            "surface": "#ffffff",
+            "surface-container": "rgba(255, 255, 255, 0.78)",
+            "on-surface": "#0f172a",
+            "on-surface-variant": "#475569",
+            "outline": "#cbd5e1",
+            "outline-variant": "rgba(186, 230, 253, 0.7)"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.375rem",
+            "lg": "0.75rem",
+            "xl": "1rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "gutter-md": "0.75rem",
+            "gutter-sm": "0.5rem",
+            "gutter-lg": "1rem",
+            "gutter-xl": "1.5rem",
+            "card-md": "1.25rem",
+            "card-sm": "0.875rem",
+            "card-lg": "1.5rem",
+            "card-pad-md": "1.25rem",
+            "card-pad-sm": "0.875rem",
+            "gutter-xs": "0.25rem",
+            "panel-pad": "1.25rem"
+          },
+          "fontFamily": {
+            "body-md": ["Inter", "sans-serif"],
+            "headline-lg": ["Inter", "sans-serif"],
+            "body-sm": ["Inter", "sans-serif"],
+            "label-lg": ["JetBrains Mono", "monospace"],
+            "label-md": ["JetBrains Mono", "monospace"],
+            "headline-xl": ["Inter", "sans-serif"],
+            "headline-xl-mobile": ["Inter", "sans-serif"],
+            "headline-md": ["Inter", "sans-serif"],
+            "body-lg": ["Inter", "sans-serif"],
+            "label-sm": ["JetBrains Mono", "monospace"]
+          },
+          "fontSize": {
+            "body-md": ["13px", {"lineHeight": "18px", "letterSpacing": "-0.005em", "fontWeight": "400"}],
+            "headline-lg": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+            "body-sm": ["12px", {"lineHeight": "16px", "letterSpacing": "0em", "fontWeight": "400"}],
+            "label-lg": ["14px", {"lineHeight": "20px", "letterSpacing": "-0.01em", "fontWeight": "500"}],
+            "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0em", "fontWeight": "500"}],
+            "headline-xl": ["36px", {"lineHeight": "44px", "letterSpacing": "-0.03em", "fontWeight": "700"}],
+            "headline-xl-mobile": ["26px", {"lineHeight": "34px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+            "headline-md": ["18px", {"lineHeight": "26px", "letterSpacing": "-0.015em", "fontWeight": "600"}],
+            "body-lg": ["15px", {"lineHeight": "22px", "letterSpacing": "-0.01em", "fontWeight": "400"}],
+            "label-sm": ["10px", {"lineHeight": "14px", "letterSpacing": "0.04em", "fontWeight": "600"}]
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    html {
+      scroll-padding-top: 110px;
+    }
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+      display: inline-block;
+      vertical-align: middle;
+      line-height: 1;
+    }
+    /* Crystal Sky Scrollbars */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: rgba(240, 249, 255, 0.6); }
+    ::-webkit-scrollbar-thumb { 
+      background: linear-gradient(180deg, rgba(56, 189, 248, 0.45), rgba(14, 165, 233, 0.6)); 
+      border-radius: 9999px; 
+    }
+    ::-webkit-scrollbar-thumb:hover { 
+      background: rgba(2, 132, 199, 0.75); 
+    }
+    
+    /* White & Sky Blue Aurora Glassmorphism Styles */
+    .luminous-glass {
+      background: rgba(255, 255, 255, 0.78);
+      background-image: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(240, 249, 255, 0.65) 100%);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(255, 255, 255, 0.85);
+      box-shadow: 0 10px 30px -5px rgba(14, 165, 233, 0.08), 0 4px 12px -2px rgba(15, 23, 42, 0.04), inset 0 1px 1px 0 rgba(255, 255, 255, 0.9);
+    }
+    
+    .luminous-glass-card-active {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(224, 242, 254, 0.75) 100%);
+      backdrop-filter: blur(28px);
+      -webkit-backdrop-filter: blur(28px);
+      border: 1px solid rgba(56, 189, 248, 0.45);
+      box-shadow: 0 14px 34px -8px rgba(2, 132, 199, 0.16), 0 0 16px -2px rgba(56, 189, 248, 0.25), inset 0 1px 2px 0 rgba(255, 255, 255, 1);
+    }
+    
+    /* Aurora Wave Animation */
+    @keyframes auroraFloat {
+      0%, 100% { transform: translate(0px, 0px) scale(1); }
+      33% { transform: translate(30px, -25px) scale(1.08); }
+      66% { transform: translate(-25px, 20px) scale(0.95); }
+    }
+    @keyframes auroraSlow {
+      0%, 100% { transform: translate(0px, 0px) rotate(0deg); }
+      50% { transform: translate(-35px, 30px) rotate(8deg); }
+    }
+    .aurora-anim-1 { animation: auroraFloat 14s ease-in-out infinite alternate; }
+    .aurora-anim-2 { animation: auroraSlow 20s ease-in-out infinite alternate; }
+    .aurora-anim-3 { animation: auroraFloat 16s ease-in-out 3s infinite alternate-reverse; }
+    
+    .glow-cyan-text { text-shadow: 0 0 12px rgba(14, 165, 233, 0.25); }
+    .glow-teal-text { text-shadow: 0 0 12px rgba(20, 184, 166, 0.25); }
+
+    /* Map container styling */
+    #map {
+      width: 100%;
+      height: 100%;
+      background: #e0f2fe;
+      z-index: 1;
+    }
+    .leaflet-tooltip {
+      background: rgba(255, 255, 255, 0.95) !important;
+      backdrop-filter: blur(16px) !important;
+      border: 1px solid rgba(14, 165, 233, 0.3) !important;
+      border-radius: 0.5rem !important;
+      color: #0f172a !important;
+      box-shadow: 0 10px 25px -5px rgba(2, 132, 199, 0.15) !important;
+    }
+    .map-legend {
+      padding: 0.6rem 0.8rem !important;
+      background: rgba(255, 255, 255, 0.92) !important;
+      backdrop-filter: blur(16px) !important;
+      border: 1px solid rgba(186, 230, 253, 0.8) !important;
+      border-radius: 0.5rem !important;
+      box-shadow: 0 8px 24px rgba(14, 165, 233, 0.08) !important;
+      font-size: 0.72rem !important;
+      line-height: 1.5 !important;
+    }
+    .map-legend strong {
+      display: block;
+      font-size: 0.75rem;
+      margin-bottom: 0.3rem;
+      color: #0f172a;
+    }
+    .legend-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.25rem 0.5rem;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      white-space: nowrap;
+      color: #475569;
+    }
+    .legend-item i {
+      display: inline-block !important;
+      width: 10px !important;
+      height: 10px !important;
+      margin-right: 5px !important;
+      border-radius: 2px !important;
+    }
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      border: 0;
+    }
+    tbody tr.selected-row {
+      background-color: rgba(224, 242, 254, 0.85) !important;
+      border-left: 3px solid #0284c7 !important;
+    }
+  </style>
 </head>
-<body>
-  <header class="app-header">
-    <div class="header-inner">
-      <div class="header-brand">
-        <h1>지자체 지역통계 및 재정·인구 탐색기</h1>
-        <p class="subtitle">2010–2024 전국 17개 시·도 230개 기초자치단체 취득세 · 주민등록인구 · 1인당 지표 분석</p>
+<body class="bg-[#f8fafc] text-slate-800 font-body-md min-h-screen flex flex-col overflow-x-hidden antialiased selection:bg-sky-200 selection:text-sky-900 relative">
+
+  <!-- FLUID AMBIENT AURORA MESH BLOBS (White & Sky Blue Aurora Background Layer) -->
+  <div class="fixed inset-0 pointer-events-none overflow-hidden z-0">
+    <div class="absolute inset-0 bg-gradient-to-b from-[#f0f7ff] via-[#f8fafc] to-[#eef6ff]"></div>
+    <!-- Multi-layered Aurora Glow Orbs -->
+    <div class="aurora-anim-1 absolute -top-32 -left-20 w-[650px] h-[650px] rounded-full bg-sky-300/35 blur-[120px] mix-blend-multiply"></div>
+    <div class="aurora-anim-2 absolute top-1/4 left-1/3 w-[720px] h-[580px] rounded-full bg-cyan-200/45 blur-[130px] mix-blend-multiply"></div>
+    <div class="aurora-anim-3 absolute -bottom-28 right-8 w-[780px] h-[640px] rounded-full bg-sky-200/50 blur-[140px] mix-blend-multiply"></div>
+    <div class="aurora-anim-1 absolute top-10 right-1/4 w-[500px] h-[500px] rounded-full bg-teal-200/35 blur-[120px] mix-blend-multiply"></div>
+    <div class="aurora-anim-2 absolute top-2/3 left-10 w-[550px] h-[450px] rounded-full bg-blue-200/30 blur-[130px] mix-blend-multiply"></div>
+    <!-- Subtle Soft Grid Pattern Overlay -->
+    <div class="absolute inset-0 bg-[radial-gradient(rgba(14,165,233,0.12)_1px,transparent_1px)] [background-size:24px_24px] opacity-75"></div>
+  </div>
+
+  <!-- TOP NAV BAR (Frosted White Aurora Glass) -->
+  <header class="w-full px-gutter-xl flex justify-between items-center h-12 border-b border-white/80 bg-white/70 backdrop-blur-2xl sticky top-0 z-50 shadow-[0_4px_24px_rgba(14,165,233,0.06),inset_0_-1px_0_rgba(186,230,253,0.6)]">
+    <div class="flex items-center gap-6">
+      <div class="flex items-center gap-2.5">
+        <span class="material-symbols-outlined text-sky-600 text-xl drop-shadow-[0_0_8px_rgba(2,132,199,0.35)]">query_stats</span>
+        <span class="text-headline-md font-headline-md font-bold text-slate-900 tracking-tight glow-cyan-text">지자체 재정·인구 탐색기 <span class="text-sky-600 font-semibold text-sm font-label-md">({{ min_year }}-{{ max_year }})</span></span>
       </div>
-      <div class="header-badges">
-        <span class="status-badge">
-          <span class="status-dot"></span>
-          전국 230개 자치단체 데이터 완비
+      <!-- Search Bar on left (Real Region Search Input) -->
+      <div class="relative hidden lg:block w-80">
+        <span class="absolute inset-y-0 left-0 flex items-center pl-2.5 pointer-events-none text-sky-600/70">
+          <span class="material-symbols-outlined text-base">search</span>
         </span>
-        <span class="version-badge">2010–2024 (15개년 연속)</span>
+        <input id="region-search" class="w-full pl-8 pr-16 py-1 bg-white/80 border border-sky-200/80 rounded-lg text-body-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200/60 shadow-[inset_0_1px_2px_rgba(15,23,42,0.03),0_2px_6px_rgba(14,165,233,0.04)] backdrop-blur-md transition-all" placeholder="지자체 실시간 검색..." type="text"/>
+        <button type="button" id="region-search-clear" class="absolute inset-y-0 right-14 flex items-center text-slate-400 hover:text-slate-600 hidden">✕</button>
+        <span class="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+          <kbd id="search-count-badge" class="px-1.5 py-0.5 text-[10px] font-label-sm text-sky-700 bg-sky-50 rounded border border-sky-200 whitespace-nowrap">230개</kbd>
+        </span>
+      </div>
+    </div>
+    <!-- Trailing Actions & Icons -->
+    <div class="flex items-center gap-2.5">
+      <div class="flex items-center gap-1.5 mr-2">
+        <span class="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 text-label-sm font-label-sm rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 whitespace-nowrap">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span id="nav-total-count">230개</span> 지자체 연계
+        </span>
+        <button id="btn-open-sync-modal" class="relative px-3 py-1 text-label-sm font-label-sm rounded-lg bg-white/90 border border-sky-300 text-sky-800 font-bold hover:bg-sky-50 active:scale-[0.98] transition-all duration-150 flex items-center gap-1.5 shadow-sm">
+          <span class="material-symbols-outlined text-sm text-sky-600">sync</span>
+          <span>데이터 최신화</span>
+          <span id="sync-notification-badge" class="hidden absolute -top-1 -right-1 flex h-2.5 w-2.5">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+          </span>
+        </button>
+        <button id="btn-open-race-modal" class="px-3 py-1 text-label-sm font-label-sm rounded-lg bg-gradient-to-r from-rose-500 via-pink-600 to-amber-500 text-white font-bold hover:brightness-105 active:scale-[0.98] transition-all duration-150 flex items-center gap-1.5 shadow-[0_3px_12px_rgba(244,63,94,0.35),inset_0_1px_1px_rgba(255,255,255,0.4)]">
+          <span class="material-symbols-outlined text-sm font-bold animate-pulse">movie</span>
+          <span>🎬 쇼츠 영상 제작</span>
+        </button>
       </div>
     </div>
   </header>
 
-  <main class="main-container">
-    <!-- Advanced Controls Panel -->
-    <section class="controls-panel" aria-label="필터 컨트롤">
-      <div class="control-group">
-        <label for="province-select">1단계: 광역 시·도 선택</label>
-        <select id="province-select" aria-label="광역 시·도 선택">
-          <option value="">전국 전체 (17개 시·도 230개 자치단체)</option>
-          <option value="KR_11">서울특별시 (25개 구)</option>
-          <option value="KR_41">경기도 (31개 시·군)</option>
-          <option value="KR_26">부산광역시 (16개 구·군)</option>
-          <option value="KR_27">대구광역시 (8개 구·군)</option>
-          <option value="KR_28">인천광역시 (10개 구·군)</option>
-          <option value="KR_29">광주광역시 (5개 구)</option>
-          <option value="KR_30">대전광역시 (5개 구)</option>
-          <option value="KR_31">울산광역시 (5개 구·군)</option>
-          <option value="KR_36">세종특별자치시</option>
-          <option value="KR_51">강원특별자치도 (18개 시·군)</option>
-          <option value="KR_43">충청북도 (11개 시·군)</option>
-          <option value="KR_44">충청남도 (15개 시·군)</option>
-          <option value="KR_52">전북특별자치도 (14개 시·군)</option>
-          <option value="KR_46">전라남도 (22개 시·군)</option>
-          <option value="KR_47">경상북도 (23개 시·군)</option>
-          <option value="KR_48">경상남도 (18개 시·군)</option>
-          <option value="KR_50">제주특별자치도 (2개 시)</option>
-        </select>
-      </div>
-
-      <div class="control-group region-control-group">
-        <div class="control-header-flex">
-          <label for="region-select">2단계: 기초자치단체 (시·군·구)</label>
-          <span id="search-count-badge" class="search-count-badge">230개</span>
-        </div>
-        <div class="search-select-wrapper">
-          <div class="input-with-icon">
-            <span class="search-icon" aria-hidden="true">🔍</span>
-            <input type="text" id="region-search" placeholder="지자체 실시간 검색 (예: 과천, 해운대, 강남)..." autocomplete="off" aria-label="지자체 실시간 검색">
-            <button type="button" id="region-search-clear" class="btn-clear" title="검색어 지우기" aria-label="검색어 지우기">✕</button>
+  <!-- APP SHELL WRAPPER: SideNavBar + Main Content Canvas -->
+  <div class="flex flex-1 relative w-full overflow-hidden z-10">
+    <!-- SIDE NAV BAR (Frosted White Aurora Glass) -->
+    <aside class="fixed top-12 left-0 bottom-0 w-64 flex flex-col justify-between p-gutter-md z-40 border-r border-white/80 bg-white/70 backdrop-blur-2xl hidden lg:flex shadow-[4px_0_24px_rgba(14,165,233,0.05)] overflow-y-auto">
+      <div class="flex flex-col gap-3">
+        <!-- Header / Identity -->
+        <div class="px-2 py-1.5 border-b border-sky-100 flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="relative flex h-2 w-2">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-2 w-2 bg-sky-600"></span>
+            </span>
+            <span class="text-label-md font-label-md font-bold text-sky-800 uppercase tracking-wider glow-cyan-text">KOREA REGION STATS</span>
           </div>
-          <select id="region-select" aria-label="분석 대상 자치단체">
-            <option value="">지역을 선택하세요</option>
+          <span id="sidebar-mode-badge" class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-sky-100 text-sky-700 border border-sky-200 whitespace-nowrap">전국 거시 비교</span>
+        </div>
+
+        <!-- [사이드바 모드 1: 전국 거시 비교 패널 (기본 표시)] -->
+        <div id="sidebar-macro" class="flex flex-col gap-3">
+          <!-- 비교 분석 지표 선택 -->
+          <div>
+            <label class="text-[11px] font-bold text-slate-600 uppercase tracking-wider block mb-1 flex items-center gap-1">
+              <span class="material-symbols-outlined text-xs text-sky-600">bar_chart</span>
+              <span>비교 분석 지표</span>
+            </label>
+            <select id="macro-indicator-select" class="indicator-synced w-full text-body-sm bg-white/90 border border-sky-200 rounded-lg py-1.5 px-2 text-slate-800 font-semibold focus:ring-1 focus:ring-sky-400 shadow-sm">
+              <optgroup label="🏛️ 지방세 세입 &amp; 재정 건전성">
+                <option value="ACQUISITION_TAX" selected>취득세 세입액 (원)</option>
+                <option value="PROPERTY_TAX">재산세 세입액 (원)</option>
+                <option value="LOCAL_INCOME_TAX">지방소득세 세입액 (원)</option>
+                <option value="LOCAL_TAX_TOTAL">지방세 총 세입액 (원)</option>
+                <option value="FISCAL_INDEPENDENCE">재정자립도 (%)</option>
+              </optgroup>
+              <optgroup label="👥 인구 동향 &amp; 소멸 지표">
+                <option value="POPULATION">주민등록인구 (명)</option>
+                <option value="ELDERLY_POPULATION_RATIO">고령인구 비율 (%)</option>
+                <option value="TOTAL_FERTILITY_RATE">합계출산율 (명)</option>
+                <option value="NET_MIGRATION_RATE">순이동률 (%)</option>
+                <option value="NET_MIGRATION">순이동인구 (명)</option>
+              </optgroup>
+              <optgroup label="💼 소득 &amp; 일자리 (국세청 연말정산)">
+                <option value="AVERAGE_WAGE">주민 1인당 평균 연봉 (실제 소득, 원)</option>
+                <option value="CORPORATE_TOTAL_PAYROLL">사업장 총급여액 (일자리 규모, 원)</option>
+                <option value="WITHHOLDING_TAX">원천징수세액 (국세, 원)</option>
+                <option value="WORKPLACE_WAGE_EARNERS">사업장 근로자수 (일자리, 명)</option>
+                <option value="BUSINESS_ESTABLISHMENTS">가동 사업체 수 (개)</option>
+              </optgroup>
+            </select>
+          </div>
+
+          <!-- 조회 대상 범위 -->
+          <div>
+            <label class="text-[11px] font-bold text-slate-600 uppercase tracking-wider block mb-1 flex items-center gap-1">
+              <span class="material-symbols-outlined text-xs text-sky-600">travel_explore</span>
+              <span>조회 대상 범위</span>
+            </label>
+            <select id="macro-province-select" class="province-synced w-full text-body-sm bg-white/90 border border-sky-200 rounded-lg py-1.5 px-2 text-slate-800 font-medium focus:ring-1 focus:ring-sky-400 shadow-sm">
+              <option value="">전국 전체 (230개 자치단체)</option>
+              <option value="KR_11">서울특별시 (25개 구)</option>
+              <option value="KR_41">경기도 (31개 시·군)</option>
+              <option value="KR_26">부산광역시 (16개 구·군)</option>
+              <option value="KR_27">대구광역시 (8개 구·군)</option>
+              <option value="KR_28">인천광역시 (10개 구·군)</option>
+              <option value="KR_29">광주광역시 (5개 구)</option>
+              <option value="KR_30">대전광역시 (5개 구)</option>
+              <option value="KR_31">울산광역시 (5개 구·군)</option>
+              <option value="KR_36">세종특별자치시</option>
+              <option value="KR_51">강원특별자치도 (18개 시·군)</option>
+              <option value="KR_43">충청북도 (11개 시·군)</option>
+              <option value="KR_44">충청남도 (15개 시·군)</option>
+              <option value="KR_52">전북특별자치도 (14개 시·군)</option>
+              <option value="KR_46">전라남도 (22개 시·군)</option>
+              <option value="KR_47">경상북도 (23개 시·군)</option>
+              <option value="KR_48">경상남도 (18개 시·군)</option>
+              <option value="KR_50">제주특별자치도 (2개 시)</option>
+            </select>
+          </div>
+
+          <!-- 전국 거시 통계 요약 위젯 -->
+          <div class="p-2.5 rounded-xl bg-gradient-to-br from-sky-50/90 to-cyan-50/70 border border-sky-200/80 shadow-[0_2px_8px_rgba(14,165,233,0.06)] flex flex-col gap-2">
+            <div class="flex items-center justify-between">
+              <span class="text-[11px] font-bold text-sky-800 flex items-center gap-1">
+                <span class="material-symbols-outlined text-xs text-sky-600">insights</span>
+                전국 거시 통계 요약
+              </span>
+              <span id="macro-stat-year-pill" class="text-[10px] font-label-sm text-sky-600 font-bold">{{ max_year }}년</span>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-1.5 text-xs">
+              <div class="bg-white/80 p-1.5 rounded-lg border border-sky-100">
+                <span class="text-[10px] text-slate-400 block">전국 평균</span>
+                <span id="macro-stat-avg" class="font-bold text-slate-800 font-mono text-[11px]">-</span>
+              </div>
+              <div class="bg-white/80 p-1.5 rounded-lg border border-sky-100">
+                <span class="text-[10px] text-slate-400 block">중앙값 (Median)</span>
+                <span id="macro-stat-median" class="font-bold text-slate-800 font-mono text-[11px]">-</span>
+              </div>
+            </div>
+
+            <div class="bg-white/85 p-2 rounded-lg border border-sky-100 flex flex-col gap-1 text-xs">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] text-emerald-600 font-bold flex items-center gap-0.5">
+                  <span class="material-symbols-outlined text-[12px]">trophy</span> 1위 최고
+                </span>
+                <span id="macro-stat-top" class="font-bold text-slate-800 text-[11px] truncate max-w-[110px] text-right">-</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] text-slate-500 font-medium">최저 지자체</span>
+                <span id="macro-stat-min" class="font-bold text-slate-700 text-[11px] truncate max-w-[110px] text-right">-</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 안내 팁 -->
+          <div class="px-2 py-2 rounded-lg bg-sky-50/60 border border-sky-200/60 text-[11px] text-slate-600 flex items-start gap-1.5">
+            <span class="material-symbols-outlined text-sm text-sky-600 shrink-0 mt-0.5">touch_app</span>
+            <span>지도나 순위표에서 지자체를 클릭하면 즉시 <strong>심층 진단</strong>으로 이동합니다.</span>
+          </div>
+        </div>
+
+        <!-- [사이드바 모드 2: 지역별 심층 진단 패널 (전환 시 표시)] -->
+        <div id="sidebar-micro" class="flex flex-col gap-3 hidden">
+          <!-- 대상 지자체 선택 -->
+          <div class="flex flex-col gap-2">
+            <div>
+              <label class="text-[11px] font-bold text-slate-600 uppercase tracking-wider block mb-1 flex items-center gap-1">
+                <span class="material-symbols-outlined text-xs text-sky-600">location_city</span>
+                <span>광역 자치단체 (시·도)</span>
+              </label>
+              <select id="province-select" class="province-synced w-full text-body-sm bg-white/90 border border-sky-200 rounded-lg py-1 px-2 text-slate-800 focus:ring-1 focus:ring-sky-400">
+                <option value="">전국 전체 (17개 시·도)</option>
+                <option value="KR_11">서울특별시 (25개 구)</option>
+                <option value="KR_41">경기도 (31개 시·군)</option>
+                <option value="KR_26">부산광역시 (16개 구·군)</option>
+                <option value="KR_27">대구광역시 (8개 구·군)</option>
+                <option value="KR_28">인천광역시 (10개 구·군)</option>
+                <option value="KR_29">광주광역시 (5개 구)</option>
+                <option value="KR_30">대전광역시 (5개 구)</option>
+                <option value="KR_31">울산광역시 (5개 구·군)</option>
+                <option value="KR_36">세종특별자치시</option>
+                <option value="KR_51">강원특별자치도 (18개 시·군)</option>
+                <option value="KR_43">충청북도 (11개 시·군)</option>
+                <option value="KR_44">충청남도 (15개 시·군)</option>
+                <option value="KR_52">전북특별자치도 (14개 시·군)</option>
+                <option value="KR_46">전라남도 (22개 시·군)</option>
+                <option value="KR_47">경상북도 (23개 시·군)</option>
+                <option value="KR_48">경상남도 (18개 시·군)</option>
+                <option value="KR_50">제주특별자치도 (2개 시)</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="text-[11px] font-bold text-slate-600 uppercase tracking-wider block mb-1 flex items-center gap-1">
+                <span class="material-symbols-outlined text-xs text-sky-600">pin_drop</span>
+                <span>기초 자치단체 (시·군·구)</span>
+              </label>
+              <select id="region-select" class="w-full text-body-sm bg-white/90 border border-sky-300 rounded-lg py-1.5 px-2 text-slate-800 font-bold focus:ring-2 focus:ring-sky-400 shadow-sm">
+                <option value="">지역을 선택하세요</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- 주요 자치단체 바로가기 칩 -->
+          <div class="px-1 pt-2 border-t border-sky-100">
+            <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5">주요 자치단체 바로가기</span>
+            <div class="flex flex-wrap gap-1.5">
+              <button type="button" class="chip-btn px-2 py-0.5 rounded-full bg-white/80 border border-sky-200 text-slate-700 text-label-sm hover:bg-sky-100 hover:text-sky-800 transition-colors" data-key="KR_11140">서울 중구</button>
+              <button type="button" class="chip-btn px-2 py-0.5 rounded-full bg-white/80 border border-sky-200 text-slate-700 text-label-sm hover:bg-sky-100 hover:text-sky-800 transition-colors" data-key="KR_41290">경기 과천</button>
+              <button type="button" class="chip-btn px-2 py-0.5 rounded-full bg-white/80 border border-sky-200 text-slate-700 text-label-sm hover:bg-sky-100 hover:text-sky-800 transition-colors" data-key="KR_11680">서울 강남</button>
+              <button type="button" class="chip-btn px-2 py-0.5 rounded-full bg-white/80 border border-sky-200 text-slate-700 text-label-sm hover:bg-sky-100 hover:text-sky-800 transition-colors" data-key="KR_41590">경기 화성</button>
+              <button type="button" class="chip-btn px-2 py-0.5 rounded-full bg-white/80 border border-sky-200 text-slate-700 text-label-sm hover:bg-sky-100 hover:text-sky-800 transition-colors" data-key="KR_26350">부산 해운대</button>
+              <button type="button" class="chip-btn px-2 py-0.5 rounded-full bg-white/80 border border-sky-200 text-slate-700 text-label-sm hover:bg-sky-100 hover:text-sky-800 transition-colors" data-key="KR_46910">전남 신안</button>
+            </div>
+          </div>
+
+          <!-- 대시보드 기준 연도 선택 -->
+          <div class="pt-2 border-t border-sky-100">
+            <label class="text-[11px] font-bold text-slate-600 uppercase tracking-wider block mb-1 flex items-center gap-1">
+              <span class="material-symbols-outlined text-xs text-sky-600">calendar_month</span>
+              <span>대시보드 기준 연도</span>
+            </label>
+            <select id="micro-year-select" class="w-full text-body-sm bg-white/90 border border-sky-200 rounded-lg py-1.5 px-2 text-slate-800 font-semibold focus:ring-1 focus:ring-sky-400 shadow-sm">
+              {% for y in years %}
+              <option value="{{ y }}" {% if y == max_year %}selected{% endif %}>{{ y }}년 기준</option>
+              {% endfor %}
+            </select>
+            <p class="text-[11px] text-slate-500 mt-1">※ 선택한 연도를 기준으로 5대 핵심 KPI 및 증감률(YoY)이 산출됩니다.</p>
+          </div>
+
+          <!-- 원스톱 종합 대시보드 안내 카드 -->
+          <div class="p-2.5 rounded-xl bg-gradient-to-br from-purple-50/80 via-sky-50/70 to-teal-50/80 border border-sky-200/80 shadow-sm flex flex-col gap-1 text-xs text-slate-600">
+            <div class="flex items-center gap-1 text-sky-800 font-bold text-[11px]">
+              <span class="material-symbols-outlined text-xs text-sky-600">dashboard_customize</span>
+              <span>원스톱 올인원 대시보드</span>
+            </div>
+            <p class="text-[11px] leading-relaxed text-slate-600">
+              지표를 일일이 변경할 필요 없이 <strong>인구·순이동·지방세·재정자립도·사업체</strong>를 한 화면에서 통합 분석합니다.
+            </p>
+          </div>
+
+          <!-- Hidden legacy select for backward compatibility -->
+          <select id="indicator-select" class="indicator-synced hidden">
+            <option value="ACQUISITION_TAX" selected>취득세</option>
           </select>
         </div>
       </div>
 
-      <div class="control-group">
-        <label for="year-select">지도 및 순위 기준 연도</label>
-        <select id="year-select" aria-label="지도 및 순위 기준 연도">
-          <option value="2024" selected>2024년 (최신 발표)</option>
-          <option value="2023">2023년</option>
-          <option value="2022">2022년</option>
-          <option value="2021">2021년</option>
-          <option value="2020">2020년</option>
-          <option value="2019">2019년</option>
-          <option value="2018">2018년</option>
-          <option value="2017">2017년</option>
-          <option value="2016">2016년</option>
-          <option value="2015">2015년</option>
-          <option value="2014">2014년</option>
-          <option value="2013">2013년</option>
-          <option value="2012">2012년</option>
-          <option value="2011">2011년</option>
-          <option value="2010">2010년</option>
-        </select>
+      <!-- Footer CTA in sidebar -->
+      <div class="flex flex-col gap-2 pt-3 border-t border-sky-100">
+        <button id="btn-sidebar-mode-toggle" class="w-full py-2 px-3 rounded-lg border border-sky-200/80 bg-white/90 text-body-sm text-sky-800 hover:bg-sky-50 flex items-center justify-center gap-1.5 transition-all shadow-sm font-semibold">
+          <span class="material-symbols-outlined text-sm text-sky-600" id="btn-sidebar-mode-icon">analytics</span>
+          <span id="btn-sidebar-mode-text">지역별 심층 진단 보기</span>
+        </button>
       </div>
+    </aside>
 
-      <div class="control-group">
-        <label for="indicator-select">주요 분석 지표</label>
-        <select id="indicator-select" aria-label="주요 분석 지표">
-          <option value="ACQUISITION_TAX_PER_CAPITA" selected>1인당 취득세 (파생 분석)</option>
-          <option value="ACQUISITION_TAX">취득세 총세입액 (원천)</option>
-          <option value="POPULATION">주민등록 인구 (원천)</option>
-        </select>
-      </div>
-    </section>
-
-    <!-- Selected District Hero Summary Banner -->
-    <section class="region-hero-card" id="region-hero" aria-label="선택 지자체 요약 정보">
-      <div class="region-hero-left">
-        <div class="region-title-row">
-          <span class="province-tag" id="hero-province-tag">서울특별시</span>
-          <h2 id="hero-region-name">강남구</h2>
-          <span class="hero-region-key" id="hero-region-key">(KR_11680)</span>
-        </div>
-        <p class="hero-desc" id="hero-desc">
-          <span id="hero-year">2024</span>년 기준 전국 기초자치단체 중 1인당 취득세 <strong id="hero-national-rank">3위</strong> (총 230개 지자체)
-        </p>
-      </div>
-      <div class="region-hero-right">
-        <div class="quick-compare-label">주요 자치단체 바로가기:</div>
-        <div class="quick-chips">
-          <button type="button" class="chip-btn" data-key="KR_11140">서울 중구</button>
-          <button type="button" class="chip-btn" data-key="KR_41290">경기 과천시</button>
-          <button type="button" class="chip-btn" data-key="KR_11680">서울 강남구</button>
-          <button type="button" class="chip-btn" data-key="KR_46910">전남 신안군</button>
-          <button type="button" class="chip-btn" data-key="KR_26350">부산 해운대구</button>
-          <button type="button" class="chip-btn" data-key="KR_27260">대구 수성구</button>
-        </div>
-      </div>
-    </section>
-
-    <!-- KPI Cards -->
-    <section class="kpi-grid" aria-label="주요 지표 요약">
-      <article class="kpi-card" id="kpi-derived">
-        <span class="kpi-label"><span id="kpi-year-derived">2024</span>년 1인당 평균 취득세액</span>
-        <span class="kpi-value highlight-derived" id="kpi-derived-val">-</span>
-        <span class="kpi-footnote">주민 1인당 납부 지방세입 부담·기여도</span>
-      </article>
-      <article class="kpi-card" id="kpi-tax">
-        <span class="kpi-label"><span id="kpi-year-tax">2024</span>년 취득세 총세입액</span>
-        <span class="kpi-value" id="kpi-tax-val">-</span>
-        <span class="kpi-footnote">행안부 지방세 연감 공식 세입 결산액</span>
-      </article>
-      <article class="kpi-card" id="kpi-pop">
-        <span class="kpi-label"><span id="kpi-year-pop">2024</span>년 주민등록 연말 인구수</span>
-        <span class="kpi-value" id="kpi-pop-val">-</span>
-        <span class="kpi-footnote">통계청 행정구역별 주민등록인구</span>
-      </article>
-    </section>
-
-    <!-- Trend Charts -->
-    <section class="charts-section" aria-label="시계열 추이 분석">
-      <div class="chart-card">
-        <div class="chart-header-row">
-          <h2>취득세 세입 추이 (2010–2024)</h2>
-          <span class="chart-badge">15개년 연속 시계열</span>
-        </div>
-        <div class="chart-container">
-          <canvas id="tax-chart"></canvas>
-        </div>
-      </div>
-      <div class="chart-card">
-        <div class="chart-header-row">
-          <h2>주민등록 인구 추이 (2010–2024)</h2>
-          <span class="chart-badge pop-badge">인구 변동 추이</span>
-        </div>
-        <div class="chart-container">
-          <canvas id="population-chart"></canvas>
-        </div>
-      </div>
-    </section>
-
-    <!-- Map & Ranking Split View -->
-    <section class="geo-ranking-section" aria-label="행정구역 지도 및 순위">
-      <div class="map-card">
-        <div class="map-header-flex">
-          <h2>전국 공간분포 히트맵 (<span id="map-year-label">2024</span>년)</h2>
-          <div class="map-actions">
-            <button type="button" id="btn-reset-map" class="map-action-btn" title="전국 중심으로 지도 줌 리셋">전국 보기</button>
-            <button type="button" id="btn-zoom-region" class="map-action-btn" title="선택 지자체로 확대">선택 지역 확대</button>
+    <!-- MAIN ANALYTICS CANVAS -->
+    <main class="flex-1 lg:pl-64 flex flex-col min-w-0 bg-transparent pb-12">
+      <!-- SUB-HEADER / FILTER CONTROL BAR & VIEW MODE TABS -->
+      <div class="relative z-20 bg-white/85 backdrop-blur-md border-b border-sky-100 px-gutter-lg py-2.5 flex flex-wrap items-center justify-between gap-3 shadow-[0_2px_8px_rgba(14,165,233,0.04)]">
+        <!-- UNIFIED 3-VIEW SEGMENTED SWITCHER -->
+        <div class="flex items-center gap-2.5">
+          <div class="inline-flex rounded-xl bg-slate-100/90 p-1 border border-sky-200/90 shadow-sm">
+            <button type="button" id="tab-macro" class="mode-tab active flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all bg-gradient-to-r from-sky-600 to-cyan-600 text-white shadow-sm">
+              <span class="material-symbols-outlined text-sm">public</span>
+              <span>전국 거시 비교 (지도·순위)</span>
+            </button>
+            <button type="button" id="tab-micro" class="mode-tab flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold text-slate-700 hover:text-sky-800 transition-all">
+              <span class="material-symbols-outlined text-sm">analytics</span>
+              <span>지역별 심층 진단 (<span id="tab-region-tag" class="font-bold text-sky-700">전국 미선택</span>)</span>
+            </button>
+            <button type="button" id="tab-compare" class="mode-tab flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold text-slate-700 hover:text-amber-800 transition-all">
+              <span class="material-symbols-outlined text-sm">swords</span>
+              <span>지자체 1:1 비교</span>
+            </button>
           </div>
         </div>
-        <div id="map"></div>
-      </div>
 
-      <div class="ranking-card">
-        <div class="ranking-header-box">
-          <div class="ranking-title-row">
-            <h2 id="ranking-title">기초자치단체 순위표</h2>
-            <span class="ranking-counter" id="ranking-count">230개 자치단체</span>
+        <!-- [모드 1: 전국 거시 비교 요약 바] -->
+        <div id="header-macro-summary" class="flex flex-wrap items-center gap-2.5">
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-white/90 border border-sky-200 text-body-sm font-body-sm text-slate-800 shadow-[0_1px_3px_rgba(14,165,233,0.05)]">
+            <span class="material-symbols-outlined text-sky-600 text-sm">public</span>
+            <span class="text-slate-600 font-medium">전국 비교 지표:</span>
+            <span id="header-macro-indicator-name" class="font-bold text-sky-700 glow-cyan-text">취득세 세입액 (원)</span>
+            <span class="px-1.5 py-0.2 rounded bg-sky-100 border border-sky-200 text-sky-700 text-xs font-bold">230개 자치단체</span>
           </div>
 
-          <div class="ranking-toolbar">
-            <div class="ranking-scope-toggle" role="group" aria-label="순위 범위 선택">
-              <button type="button" id="btn-scope-all" class="scope-btn active">전국 순위</button>
-              <button type="button" id="btn-scope-prov" class="scope-btn">시·도 내 순위</button>
+          <!-- 선택된 지자체 미니 알림 칩 (기본 숨김, 지자체 클릭 시 표시) -->
+          <div id="header-macro-selected-region-chip" class="hidden inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-sky-50 hover:bg-sky-100 border border-sky-200 text-xs text-sky-800 cursor-pointer transition-all shadow-sm">
+            <span class="material-symbols-outlined text-xs text-sky-600">near_me</span>
+            <span>선택: <strong id="header-macro-selected-name" class="text-sky-900">-</strong> (<span id="header-macro-selected-rank" class="font-bold text-sky-700">-</span>)</span>
+            <span class="text-[10px] text-sky-600 font-bold ml-1 bg-white px-1.5 py-0.5 rounded border border-sky-200">심층 진단 👉</span>
+          </div>
+
+          <!-- 선택 초기화 버튼 -->
+          <button type="button" id="btn-reset-region-selection" class="hidden inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-xs text-slate-600 hover:text-rose-600 hover:border-rose-300 hover:bg-rose-50 transition-all font-medium shadow-sm" title="지자체 선택 초기화 (전국 모드로 복귀)">
+            <span class="material-symbols-outlined text-xs">restart_alt</span>
+            <span>선택 초기화</span>
+          </button>
+
+          <!-- 전국 지도 맞춤 (전국 보기) 버튼 -->
+          <button type="button" id="btn-reset-map" class="inline-flex items-center gap-1 px-2.5 py-1 text-label-sm font-label-sm rounded-lg bg-gradient-to-r from-sky-500 via-sky-600 to-cyan-600 text-white font-bold hover:brightness-105 active:scale-[0.98] transition-all duration-150 shadow-sm" title="지도 시점을 대한민국 전국으로 맞춥니다">
+            <span class="material-symbols-outlined text-sm font-bold">crop_free</span>
+            <span>전국 보기</span>
+          </button>
+
+          <!-- 기준 연도 셀렉터 -->
+          <div class="flex items-center bg-white/90 rounded-lg p-0.5 border border-sky-200 shadow-[inset_0_1px_2px_rgba(0,0,0,0.03)]">
+            <span class="px-2 text-label-sm text-slate-500 font-semibold">기준 연도:</span>
+            <select id="macro-year-select" class="year-synced text-label-sm font-bold bg-transparent border-0 text-sky-700 focus:ring-0 py-0.5 pr-6 cursor-pointer">
+              {% for y in years %}
+              <option value="{{ y }}" {% if y == max_year %}selected{% endif %}>{{ y }}년 {% if y == max_year %}(최신){% endif %}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <!-- [모드 2: 지역별 심층 진단 브레드크럼 & 연도 바] -->
+        <div id="header-micro-summary" class="flex flex-wrap items-center gap-2.5 hidden">
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-white/90 border border-sky-200 text-body-sm font-body-sm text-slate-800 shadow-[0_1px_3px_rgba(14,165,233,0.05)]">
+            <span class="material-symbols-outlined text-sky-600 text-sm">location_on</span>
+            <span id="hero-province-tag" class="text-slate-600 font-medium">대한민국</span>
+            <span class="text-slate-300">&gt;</span>
+            <span id="hero-region-name" class="font-bold text-sky-700 glow-cyan-text">선택된 지역 없음</span>
+            <span id="hero-region-key" class="text-xs text-slate-400 font-mono"></span>
+            <span id="hero-national-rank" class="text-sky-700 font-bold px-1.5 py-0.2 rounded bg-sky-100 border border-sky-200 text-xs ml-1">-</span>
+          </div>
+
+          <!-- 기준 연도 셀렉터 -->
+          <div class="flex items-center bg-white/90 rounded-lg p-0.5 border border-sky-200 shadow-[inset_0_1px_2px_rgba(0,0,0,0.03)]">
+            <span class="px-2 text-label-sm text-slate-500 font-semibold">기준 연도:</span>
+            <select id="year-select" class="year-synced text-label-sm font-bold bg-transparent border-0 text-sky-700 focus:ring-0 py-0.5 pr-6 cursor-pointer">
+              {% for y in years %}
+              <option value="{{ y }}" {% if y == max_year %}selected{% endif %}>{{ y }}년 {% if y == max_year %}(최신){% endif %}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <!-- [모드 3: 지자체 1:1 비교 모드 요약 바] -->
+        <div id="header-compare-summary" class="flex flex-wrap items-center gap-2.5 hidden">
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-white/90 border border-amber-200 text-body-sm font-body-sm text-slate-800 shadow-[0_1px_3px_rgba(245,158,11,0.08)]">
+            <span class="material-symbols-outlined text-amber-600 text-sm">swords</span>
+            <span class="text-slate-600 font-medium">현재 비교:</span>
+            <span id="compare-header-name-a" class="font-bold text-sky-700">서울 강남구</span>
+            <span class="text-amber-500 font-extrabold text-xs">VS</span>
+            <span id="compare-header-name-b" class="font-bold text-amber-600">경기 화성시</span>
+          </div>
+          <div id="compare-loading-indicator" class="hidden inline-flex items-center gap-1.5 text-xs text-sky-700 font-bold bg-sky-50 border border-sky-200 px-2.5 py-1 rounded-lg">
+            <span class="material-symbols-outlined text-sm animate-spin text-sky-600">progress_activity</span>
+            <span>데이터 연산 중...</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================================= -->
+      <!-- VIEW 1: [MACRO] 전국 공간분포 히트맵 & 230개 순위표 뷰 -->
+      <!-- ========================================================= -->
+      <div id="view-macro" class="p-gutter-lg grid grid-cols-1 xl:grid-cols-12 gap-4">
+        <!-- LEFT: CHOROPLETH HEATMAP SECTION (Col 7 / ~58%) -->
+        <div class="xl:col-span-7 flex flex-col gap-4">
+          <div class="luminous-glass rounded-xl p-card-md flex flex-col h-full relative overflow-hidden">
+            <!-- Card Header & View Switchers -->
+            <div class="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-sky-100">
+              <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-sky-600 text-lg drop-shadow-[0_0_6px_rgba(2,132,199,0.3)]">map</span>
+                <h2 class="text-headline-md font-headline-md text-slate-900 font-bold tracking-tight">전국 시·군·구 공간분포 히트맵 (<span id="map-year-label">{{ max_year }}</span>년)</h2>
+              </div>
+              <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-white/90 border border-sky-200 text-slate-700 text-label-sm font-semibold shadow-sm">
+                <span class="w-2 h-2 rounded-full bg-violet-600 animate-pulse"></span>
+                <span>5분위 열화상 히트맵</span>
+              </div>
             </div>
-            <div class="ranking-search-box">
-              <input type="text" id="ranking-search" placeholder="순위표 내 지자체 검색..." aria-label="순위표 내 지자체 검색">
+
+            <!-- Choropleth Interactive Leaflet Map Container -->
+            <div class="relative w-full h-[520px] my-2 rounded-lg border border-sky-200/80 overflow-hidden shadow-[inset_0_2px_8px_rgba(14,165,233,0.06),0_4px_16px_rgba(15,23,42,0.03)]">
+              <div id="map"></div>
+            </div>
+
+            <!-- Historical Year Scrubbing Timeline Pills -->
+            <div class="pt-2 border-t border-sky-100">
+              <div class="flex items-center justify-between text-body-sm text-slate-500 mb-1.5 px-1">
+                <span class="flex items-center gap-1">
+                  <span class="material-symbols-outlined text-xs text-sky-600">history</span> {{ total_years }}개년 시계열 스크러빙 타임라인 ({{ min_year }} ~ {{ max_year }})
+                </span>
+                <span class="text-sky-700 font-label-sm font-semibold">연도 클릭 시 지도·순위표 자동 동기화</span>
+              </div>
+              <div id="timeline-scrubber" class="flex items-center justify-between gap-1 overflow-x-auto pb-1">
+                {% for y in years reversed %}
+                <button type="button" class="year-pill {% if y == max_year %}px-2.5 py-1 rounded text-label-sm font-label-sm bg-gradient-to-r from-sky-600 to-cyan-600 text-white font-bold shadow-[0_3px_10px_rgba(2,132,199,0.35)]{% else %}px-2 py-1 rounded text-label-sm font-label-sm text-slate-600 hover:text-sky-800 hover:bg-sky-100/60 font-medium{% endif %} transition-all" data-year="{{ y }}">{{ y }}</button>
+                {% endfor %}
+              </div>
             </div>
           </div>
         </div>
 
-        <div class="table-container">
-          <table id="ranking-table">
-            <thead>
-              <tr>
-                <th style="width: 70px;">순위</th>
-                <th>자치단체</th>
-                <th>시·도</th>
-                <th style="text-align: right;">지표값</th>
-                <th style="width: 75px; text-align: center;">상태</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td colspan="5" class="text-center">데이터를 불러오는 중입니다...</td>
-              </tr>
-            </tbody>
-          </table>
+        <!-- RIGHT: REGIONAL RANKING TABLE (Col 5 / ~42%) -->
+        <div class="xl:col-span-5 flex flex-col gap-4">
+          <div class="luminous-glass rounded-xl p-card-md flex flex-col h-full">
+            <!-- Header & Search -->
+            <div class="flex flex-wrap items-center justify-between pb-2 mb-2 border-b border-sky-100 gap-2">
+              <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-sky-600 text-lg drop-shadow-[0_0_4px_rgba(2,132,199,0.3)]">format_list_numbered</span>
+                <h3 id="ranking-title" class="text-body-md font-body-md font-bold text-slate-900">전국 기초자치단체 순위표</h3>
+                <span id="ranking-count" class="text-label-sm font-label-sm px-1.5 py-0.5 rounded bg-sky-100 text-sky-800">230개</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <div class="inline-flex rounded-lg bg-sky-50/80 p-0.5 border border-sky-200/80 text-[11px] font-label-sm">
+                  <button type="button" id="btn-scope-all" class="scope-btn active px-2.5 py-0.5 rounded bg-sky-600 text-white font-bold shadow-sm">전국</button>
+                  <button type="button" id="btn-scope-prov" class="scope-btn px-2.5 py-0.5 rounded text-slate-600 hover:text-sky-800 font-medium">시·도 내</button>
+                </div>
+                <input type="text" id="ranking-search" placeholder="지자체 검색..." class="w-28 text-xs py-1 px-2 border border-sky-200 rounded-md bg-white/90 focus:ring-1 focus:ring-sky-400">
+              </div>
+            </div>
+
+            <!-- Quick Action Alert Banner -->
+            <div class="mb-2 px-3 py-1.5 rounded-lg bg-sky-50/80 border border-sky-200 flex items-center justify-between text-xs text-slate-700">
+              <div class="flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-sky-600 text-sm">touch_app</span>
+                <span>선택 지자체: <strong id="quick-selected-name" class="text-slate-600 font-bold">전국 전체 (미선택)</strong></span>
+                <button type="button" id="btn-clear-table-selection" class="hidden text-[11px] text-slate-400 hover:text-rose-600 underline ml-1 font-medium cursor-pointer">선택 해제 ✕</button>
+              </div>
+              <button type="button" id="btn-goto-micro" class="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs transition-colors shadow-sm opacity-60 cursor-not-allowed" disabled>
+                <span>심층 진단 보기</span>
+                <span class="material-symbols-outlined text-xs">arrow_forward</span>
+              </button>
+            </div>
+
+            <!-- High-Density Analytical Table (Expanded Height) -->
+            <div class="w-full overflow-y-auto max-h-[500px] border border-sky-100 rounded-lg">
+              <table id="ranking-table" class="w-full text-left border-collapse text-body-sm">
+                <thead>
+                  <tr class="h-8 sticky top-0 border-b border-sky-200 bg-sky-50/95 text-xs font-label-sm text-sky-900 font-bold backdrop-blur-md z-10">
+                    <th class="py-1.5 px-2.5">순위</th>
+                    <th class="py-1.5 px-2">지자체</th>
+                    <th class="py-1.5 px-2">시·도</th>
+                    <th id="ranking-val-col-title" class="py-1.5 px-2.5 text-right">지표값</th>
+                    <th class="py-1.5 px-2 text-center">상태</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-sky-100 text-[12px]">
+                  <tr>
+                    <td colspan="5" class="py-4 text-center text-slate-400">데이터를 불러오는 중입니다...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       </div>
-    </section>
 
-    <!-- Source Traceability Panel -->
-    <section class="source-panel" aria-label="데이터 출처 및 메타데이터">
-      <h2>데이터 출처 및 계보 (Data Lineage & Provenance)</h2>
-      <div id="source-details">
-        <p><strong>취득세 원천:</strong> 통계청 KOSIS 시·도별 세목별 취득세 결산 세입 (전국 16개 광역시도 공식 테이블 <code>TX_11007_A058</code> ~ <code>A073</code>, 2010–2024년 230개 지자체)</p>
-        <p><strong>인구 원천:</strong> 행정안전부·통계청 시군구별 주민등록 인구현황 (<code>DT_1B040A3</code>)</p>
-        <p><strong>공간 경계:</strong> 통계지리정보서비스(SGIS) 연도별 기초자치단체 공간 경계 (EPSG:4326 WGS84 재투영)</p>
-        <p><strong>품질 검증:</strong> 단일 계보(Single Lineage) 원칙, 0원과 결측치(-) 분리 정규화, 감사 추적성 완비</p>
+      <!-- ========================================================= -->
+      <div id="view-micro" class="p-gutter-lg flex flex-col gap-4 hidden">
+        <!-- TOP: Selected District Hero Summary & Navigation -->
+        <div class="luminous-glass rounded-xl p-card-md pl-6 sm:pl-7 flex flex-wrap items-center justify-between gap-4 border-l-4 border-l-sky-500 shadow-sm">
+          <div>
+            <div class="flex items-center gap-2 text-slate-500 text-xs mb-1">
+              <span id="hero-province-tag-micro" class="font-semibold text-slate-700">경기도</span>
+              <span>&gt;</span>
+              <span class="text-sky-600 font-semibold">4대 정주 여건 &amp; 지역 활력 종합 진단</span>
+              <span class="text-slate-300">|</span>
+              <span class="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold">15개년 정밀 시계열 진단</span>
+            </div>
+            <div class="flex items-center gap-3">
+              <h2 id="micro-region-title" class="text-2xl sm:text-3xl font-bold text-slate-900 glow-cyan-text">광명시</h2>
+              <span id="micro-region-code" class="text-xs text-slate-400 font-mono bg-white px-2 py-0.5 rounded border border-slate-200">(KR_41210)</span>
+              <span id="micro-baseline-year-pill" class="px-2.5 py-0.5 rounded-full bg-sky-100 text-sky-800 text-xs font-bold border border-sky-300">기준 연도: <span id="micro-baseline-year-text">{{ max_year }}년</span></span>
+            </div>
+            <p id="hero-desc" class="text-body-sm text-slate-600 mt-1">
+              "이 지역은 살기 좋아지고 있는가?" — 인구 활력, 소득·일자리, 자산·주거, 지자체 행정의 4대 핵심 축으로 지역의 생로병사를 종합 진단합니다.
+            </p>
+          </div>
+
+          <!-- Quick Actions -->
+          <div class="flex items-center gap-2">
+            <button type="button" id="btn-goto-macro" class="px-3.5 py-2 rounded-xl bg-white border border-sky-300 text-sky-700 font-bold text-xs hover:bg-sky-50 flex items-center gap-1.5 transition-all shadow-sm">
+              <span class="material-symbols-outlined text-sm">public</span>
+              <span>전국 지도·순위 비교로 이동</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- EXECUTIVE DIAGNOSIS BANNER: Comprehensive Vitality Verdict & 4-Pillar Status -->
+        <div id="micro-diagnosis-banner" class="rounded-xl p-4 bg-gradient-to-r from-sky-950 via-slate-900 to-indigo-950 text-white shadow-md flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border border-sky-800/60 relative overflow-hidden">
+          <div class="flex-1 z-10">
+            <div class="flex flex-wrap items-center gap-2 mb-1.5">
+              <span class="text-[11px] font-bold text-sky-300 tracking-wider uppercase flex items-center gap-1">
+                <span class="material-symbols-outlined text-sm text-sky-400">verified</span>
+                지역 활력 종합 진단
+              </span>
+              <span id="diag-verdict-badge" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-400/20 text-emerald-300 border border-emerald-400/40">
+                청년 유입 &amp; 자립 급성장형 도시
+              </span>
+            </div>
+            <p id="diag-briefing-text" class="text-xs sm:text-sm font-medium text-slate-200 leading-relaxed">
+              10년 전 대비 인구와 소득세 및 세수 총액을 종합 비교 분석 중입니다.
+            </p>
+          </div>
+
+          <!-- 4-Pillar Mini Traffic Lights -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 w-full md:w-auto z-10 shrink-0">
+            <div class="bg-white/10 backdrop-blur-md rounded-lg p-2 border border-white/10 text-center flex flex-col items-center min-w-[90px]">
+              <span class="text-[10px] text-slate-300 font-medium">👥 인구 활력</span>
+              <div class="flex items-center gap-1.5 mt-0.5">
+                <span id="pill-light-demo" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span id="pill-score-demo" class="text-xs font-bold text-white">우수 (A)</span>
+              </div>
+            </div>
+            <div class="bg-white/10 backdrop-blur-md rounded-lg p-2 border border-white/10 text-center flex flex-col items-center min-w-[90px]">
+              <span class="text-[10px] text-slate-300 font-medium">💼 소득·일자리</span>
+              <div class="flex items-center gap-1.5 mt-0.5">
+                <span id="pill-light-inc" class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                <span id="pill-score-inc" class="text-xs font-bold text-white">우수 (A)</span>
+              </div>
+            </div>
+            <div class="bg-white/10 backdrop-blur-md rounded-lg p-2 border border-white/10 text-center flex flex-col items-center min-w-[90px]">
+              <span class="text-[10px] text-slate-300 font-medium">🏠 자산·주거</span>
+              <div class="flex items-center gap-1.5 mt-0.5">
+                <span id="pill-light-house" class="w-2 h-2 rounded-full bg-sky-400"></span>
+                <span id="pill-score-house" class="text-xs font-bold text-white">양호 (B)</span>
+              </div>
+            </div>
+            <div class="bg-white/10 backdrop-blur-md rounded-lg p-2 border border-white/10 text-center flex flex-col items-center min-w-[90px]">
+              <span class="text-[10px] text-slate-300 font-medium">💰 지자체 행정</span>
+              <div class="flex items-center gap-1.5 mt-0.5">
+                <span id="pill-light-fisc" class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                <span id="pill-score-fisc" class="text-xs font-bold text-white">우수 (A)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4 BIG QUESTION CARDS (4 Pillars of Livability & Vitality) -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <!-- CARD 1: [👥 1. 인구 활력] -->
+          <div class="luminous-glass rounded-xl p-3.5 flex flex-col justify-between border-t-4 border-t-purple-500 shadow-sm relative overflow-hidden">
+            <div>
+              <div class="flex items-center justify-between text-xs text-slate-500 mb-0.5">
+                <span class="font-bold text-purple-900 flex items-center gap-1 text-[13px]">
+                  <span class="material-symbols-outlined text-purple-600 text-sm">groups</span>
+                  1. 인구 활력
+                </span>
+                <span id="kpi-pop-year" class="text-[10px] font-mono text-slate-400">{{ max_year }}년</span>
+              </div>
+              <div class="text-[11px] font-semibold text-purple-700 mb-1.5">
+                "젊은 사람들이 들어오고 있는가?"
+              </div>
+              <!-- Main: 순이동 -->
+              <div class="bg-purple-50/60 rounded-lg p-2 border border-purple-100 mb-2">
+                <div class="flex items-center justify-between text-[11px] text-slate-500 mb-0.5">
+                  <span>연간 순이동(전입-전출)</span>
+                  <span id="kpi-mig-status" class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-white text-purple-700 border border-purple-200">인구이동</span>
+                </div>
+                <div id="kpi-mig-val" class="text-xl font-bold text-purple-950 font-mono tracking-tight">-</div>
+                <div class="flex items-center justify-between text-[10px] text-slate-500 mt-0.5">
+                  <span id="kpi-mig-rate" class="font-semibold text-purple-700">-</span>
+                  <span id="kpi-mig-rank" class="font-medium">-</span>
+                </div>
+              </div>
+            </div>
+            <!-- Sub details -->
+            <div class="pt-2 border-t border-purple-100 flex flex-col gap-1 text-[11px]">
+              <div class="flex items-center justify-between">
+                <span class="text-slate-500">합계출산율</span>
+                <span id="kpi-fert-val" class="font-bold font-mono text-slate-800">-</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-slate-500">고령인구 비율</span>
+                <span id="kpi-elder-val" class="font-bold font-mono text-slate-800">-</span>
+              </div>
+              <div class="flex items-center justify-between pt-1 border-t border-dashed border-purple-100 text-[10px]">
+                <span class="text-slate-400">주민인구 (YoY)</span>
+                <span id="kpi-pop-val" class="font-medium font-mono text-slate-600">-</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- CARD 2: [💼 2. 소득 & 일자리] -->
+          <div class="luminous-glass rounded-xl p-3.5 flex flex-col justify-between border-t-4 border-t-emerald-500 shadow-sm relative overflow-hidden">
+            <div>
+              <div class="flex items-center justify-between text-xs text-slate-500 mb-0.5">
+                <span class="font-bold text-emerald-900 flex items-center gap-1 text-[13px]">
+                  <span class="material-symbols-outlined text-emerald-600 text-sm">payments</span>
+                  2. 소득 &amp; 일자리
+                </span>
+                <span id="kpi-inc-year" class="text-[10px] font-mono text-slate-400">2023년</span>
+              </div>
+              <div class="text-[11px] font-semibold text-emerald-700 mb-1.5">
+                "주민과 기업이 돈을 잘 버는가?"
+              </div>
+              <!-- Main: 주민 1인당 평균 연봉 (진짜 주민 소득) -->
+              <div class="bg-emerald-50/70 rounded-lg p-2 border border-emerald-200/80 mb-2">
+                <div class="flex items-center justify-between text-[11px] text-slate-600 mb-0.5">
+                  <span class="font-medium">주민 1인당 평균 연봉</span>
+                  <span class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-emerald-600 text-white shadow-xs">국세청 연말정산</span>
+                </div>
+                <div id="kpi-avg-wage-val" class="text-xl font-bold text-emerald-950 font-mono tracking-tight">-</div>
+                <div class="flex items-center justify-between text-[10px] text-slate-500 mt-0.5">
+                  <span id="kpi-avg-wage-yoy" class="font-semibold text-emerald-700">-</span>
+                  <span id="kpi-avg-wage-rank" class="font-medium">-</span>
+                </div>
+              </div>
+            </div>
+            <!-- Sub details: 기업 일자리 & 세무 기반 -->
+            <div class="pt-2 border-t border-emerald-100 flex flex-col gap-1 text-[11px]">
+              <div class="flex items-center justify-between">
+                <span class="text-slate-500">관내 기업 총급여액</span>
+                <span id="kpi-corp-payroll" class="font-bold font-mono text-sky-900">-</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-slate-500">원천징수세액</span>
+                <span id="kpi-withhold-tax" class="font-bold font-mono text-indigo-900">-</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-slate-500">1인당 지방소득세</span>
+                <span id="kpi-pc-inc-val" class="font-bold font-mono text-emerald-900">-</span>
+              </div>
+              <div class="flex items-center justify-between pt-1 border-t border-dashed border-emerald-100 text-[10px]">
+                <span class="text-slate-400">가동 사업체 / 천명당</span>
+                <span id="kpi-biz-count" class="font-medium font-mono text-slate-600">-</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- CARD 3: [🏠 3. 자산 & 주거 매력] -->
+          <div class="luminous-glass rounded-xl p-3.5 flex flex-col justify-between border-t-4 border-t-amber-500 shadow-sm relative overflow-hidden">
+            <div>
+              <div class="flex items-center justify-between text-xs text-slate-500 mb-0.5">
+                <span class="font-bold text-amber-900 flex items-center gap-1 text-[13px]">
+                  <span class="material-symbols-outlined text-amber-600 text-sm">holiday_village</span>
+                  3. 자산 &amp; 주거 매력
+                </span>
+                <span id="kpi-house-year" class="text-[10px] font-mono text-slate-400">2024년</span>
+              </div>
+              <div class="text-[11px] font-semibold text-amber-700 mb-1.5">
+                "집을 사고 정착하고 싶어 하는가?"
+              </div>
+              <!-- Main: 취득세 (거래 활력) -->
+              <div class="bg-amber-50/60 rounded-lg p-2 border border-amber-100 mb-2">
+                <div class="flex items-center justify-between text-[11px] text-slate-500 mb-0.5">
+                  <span>취득세 세입 (매매 활력)</span>
+                  <span class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-white text-amber-700 border border-amber-200">부동산</span>
+                </div>
+                <div id="kpi-acq-val" class="text-xl font-bold text-amber-950 font-mono tracking-tight">-</div>
+                <div class="flex items-center justify-between text-[10px] text-slate-500 mt-0.5">
+                  <span id="kpi-acq-yoy" class="font-semibold text-amber-700">-</span>
+                  <span id="kpi-acq-rank" class="font-medium">-</span>
+                </div>
+              </div>
+            </div>
+            <!-- Sub details -->
+            <div class="pt-2 border-t border-amber-100 flex flex-col gap-1 text-[11px]">
+              <div class="flex items-center justify-between">
+                <span class="text-slate-500">재산세 (보유 자산가치)</span>
+                <span id="kpi-prop-val" class="font-bold font-mono text-slate-800">-</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-slate-500">1인당 취득세</span>
+                <span id="kpi-pc-acq-val" class="font-bold font-mono text-slate-800">-</span>
+              </div>
+              <div class="flex items-center justify-between pt-1 border-t border-dashed border-amber-100 text-[10px]">
+                <span class="text-slate-400">재산세 전국 순위</span>
+                <span id="kpi-prop-rank" class="font-medium font-mono text-slate-600">-</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- CARD 4: [💰 4. 지자체 행정 여력] -->
+          <div class="luminous-glass rounded-xl p-3.5 flex flex-col justify-between border-t-4 border-t-sky-500 shadow-sm relative overflow-hidden">
+            <div>
+              <div class="flex items-center justify-between text-xs text-slate-500 mb-0.5">
+                <span class="font-bold text-sky-900 flex items-center gap-1 text-[13px]">
+                  <span class="material-symbols-outlined text-sky-600 text-sm">account_balance</span>
+                  4. 지자체 행정 여력
+                </span>
+                <span id="kpi-tax-year" class="text-[10px] font-mono text-slate-400">2024년</span>
+              </div>
+              <div class="text-[11px] font-semibold text-sky-700 mb-1.5">
+                "살림이 넉넉해서 복지를 챙기는가?"
+              </div>
+              <!-- Main: 지방세 총세입 -->
+              <div class="bg-sky-50/60 rounded-lg p-2 border border-sky-100 mb-2">
+                <div class="flex items-center justify-between text-[11px] text-slate-500 mb-0.5">
+                  <span>지방세 총 세입액</span>
+                  <span class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-white text-sky-700 border border-sky-200">자체 세수</span>
+                </div>
+                <div id="kpi-tax-val" class="text-xl font-bold text-sky-950 font-mono tracking-tight">-</div>
+                <div class="flex items-center justify-between text-[10px] text-slate-500 mt-0.5">
+                  <span id="kpi-tax-yoy" class="font-semibold text-sky-700">-</span>
+                  <span id="kpi-tax-rank" class="font-medium">-</span>
+                </div>
+              </div>
+            </div>
+            <!-- Sub details -->
+            <div class="pt-2 border-t border-sky-100 flex flex-col gap-1 text-[11px]">
+              <div class="flex items-center justify-between">
+                <span class="text-slate-500">재정자립도</span>
+                <span id="kpi-fisc-val" class="font-bold font-mono text-slate-800">-</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-slate-500">1인당 지방세 세입</span>
+                <span id="kpi-pc-tax-val" class="font-bold font-mono text-slate-800">-</span>
+              </div>
+              <div class="flex items-center justify-between pt-1 border-t border-dashed border-sky-100 text-[10px]">
+                <span class="text-slate-400">자립도 전국 순위</span>
+                <span id="kpi-fisc-rank" class="font-medium font-mono text-slate-600">-</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- INTEGRATED 4-PILLAR CHARTS (Interactive Tab Controls) -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <!-- Chart 1: 인구 & 경제 (탭 전환형) -->
+          <div class="luminous-glass rounded-xl p-card-md flex flex-col gap-3 shadow-sm">
+            <div class="flex flex-wrap items-center justify-between pb-2 border-b border-purple-100 gap-2">
+              <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-purple-600 text-base">analytics</span>
+                <h3 id="chart-left-title" class="text-body-md font-bold text-slate-900">
+                  👥 1. 인구 활력 &amp; 순이동 시계열 (15개년)
+                </h3>
+              </div>
+              <!-- Tab switcher -->
+              <div class="flex items-center bg-purple-50/80 p-0.5 rounded-lg border border-purple-200 text-xs">
+                <button type="button" id="btn-chart-tab-demo" class="px-2.5 py-1 rounded-md font-bold text-purple-900 bg-white shadow-xs transition-all">
+                  인구 활력
+                </button>
+                <button type="button" id="btn-chart-tab-income" class="px-2.5 py-1 rounded-md font-medium text-purple-700 hover:text-purple-900 transition-all">
+                  소득·일자리
+                </button>
+              </div>
+            </div>
+            <div class="relative w-full h-72 bg-white/70 rounded-lg border border-purple-100 p-2 shadow-inner">
+              <canvas id="dashboard-demographics-chart"></canvas>
+            </div>
+          </div>
+
+          <!-- Chart 2: 자산 & 재정 (탭 전환형) -->
+          <div class="luminous-glass rounded-xl p-card-md flex flex-col gap-3 shadow-sm">
+            <div class="flex flex-wrap items-center justify-between pb-2 border-b border-sky-100 gap-2">
+              <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-sky-600 text-base">query_stats</span>
+                <h3 id="chart-right-title" class="text-body-md font-bold text-slate-900">
+                  💰 4. 지자체 행정 &amp; 세수 총액 시계열 (15개년)
+                </h3>
+              </div>
+              <!-- Tab switcher -->
+              <div class="flex items-center bg-sky-50/80 p-0.5 rounded-lg border border-sky-200 text-xs">
+                <button type="button" id="btn-chart-tab-fisc" class="px-2.5 py-1 rounded-md font-bold text-sky-900 bg-white shadow-xs transition-all">
+                  지자체 행정
+                </button>
+                <button type="button" id="btn-chart-tab-house" class="px-2.5 py-1 rounded-md font-medium text-sky-700 hover:text-sky-900 transition-all">
+                  자산·주거 매력
+                </button>
+              </div>
+            </div>
+            <div class="relative w-full h-72 bg-white/70 rounded-lg border border-sky-100 p-2 shadow-inner">
+              <canvas id="dashboard-tax-chart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4-PILLAR MULTI-TIER COMPREHENSIVE MATRIX TABLE (15-Year Certified Data) -->
+        <div class="luminous-glass rounded-xl p-card-md flex flex-col gap-2 shadow-sm">
+          <div class="flex flex-wrap items-center justify-between pb-2 border-b border-sky-100 gap-2">
+            <div class="flex items-center gap-2">
+              <span class="material-symbols-outlined text-sky-600 text-base">table_chart</span>
+              <h3 class="text-body-md font-bold text-slate-900">
+                <span id="micro-table-region-name">광명시</span> 4대 정주 여건 &amp; 활력 종합 매트릭스 (15개년)
+              </h3>
+            </div>
+            <div class="flex items-center gap-2 text-xs text-slate-500">
+              <span class="px-2 py-0.5 rounded bg-sky-50 text-sky-700 border border-sky-200 font-medium">연간 확정치 기준 YoY 분석</span>
+              <span>★: 기준 연도</span>
+            </div>
+          </div>
+          <div class="w-full overflow-x-auto max-h-[460px] rounded-lg border border-sky-200 shadow-inner">
+            <table id="micro-dashboard-table" class="w-full text-left border-collapse text-xs">
+              <thead class="sticky top-0 z-20 shadow-sm backdrop-blur-md">
+                <!-- Tier 1: 4 Pillars Categorization -->
+                <tr class="text-[11px] font-extrabold uppercase border-b border-sky-200">
+                  <th rowspan="2" class="py-2.5 px-3 text-center bg-sky-200/95 text-sky-950 border-r border-sky-300 whitespace-nowrap">연도</th>
+                  <th colspan="4" class="py-1 px-2 text-center bg-purple-100/95 text-purple-950 border-r border-purple-200">
+                    👥 1. 인구 활력 ("사람이 오는가?")
+                  </th>
+                  <th colspan="5" class="py-1 px-2 text-center bg-emerald-100/95 text-emerald-950 border-r border-emerald-200">
+                    💼 2. 소득 &amp; 일자리 ("돈을 버는가?")
+                  </th>
+                  <th colspan="3" class="py-1 px-2 text-center bg-amber-100/95 text-amber-950 border-r border-amber-200">
+                    🏠 3. 자산 &amp; 주거 ("정착하는가?")
+                  </th>
+                  <th colspan="3" class="py-1 px-2 text-center bg-sky-100/95 text-sky-950">
+                    💰 4. 지자체 행정 ("살림 넉넉한가?")
+                  </th>
+                </tr>
+                <!-- Tier 2: Specific Metrics -->
+                <tr class="text-[11px] font-bold border-b border-sky-200 bg-white/95 text-slate-700">
+                  <!-- Pillar 1 -->
+                  <th class="py-1.5 px-2 text-right bg-purple-50/80 whitespace-nowrap">주민등록인구</th>
+                  <th class="py-1.5 px-2 text-center bg-purple-50/80 whitespace-nowrap">인구 YoY</th>
+                  <th class="py-1.5 px-2 text-right bg-purple-50/80 whitespace-nowrap">순이동(명)</th>
+                  <th class="py-1.5 px-2 text-center bg-purple-50/80 border-r border-purple-200 whitespace-nowrap">출산율/고령화</th>
+                  <!-- Pillar 2 -->
+                  <th class="py-1.5 px-2 text-right bg-emerald-50/80 whitespace-nowrap">주민 평균연봉</th>
+                  <th class="py-1.5 px-2 text-right bg-emerald-50/80 whitespace-nowrap">기업 총급여</th>
+                  <th class="py-1.5 px-2 text-right bg-emerald-50/80 whitespace-nowrap">1인당 소득세</th>
+                  <th class="py-1.5 px-2 text-right bg-emerald-50/80 whitespace-nowrap">가동 사업체</th>
+                  <th class="py-1.5 px-2 text-right bg-emerald-50/80 border-r border-emerald-200 whitespace-nowrap">천명당 사업체</th>
+                  <!-- Pillar 3 -->
+                  <th class="py-1.5 px-2 text-right bg-amber-50/80 whitespace-nowrap">취득세</th>
+                  <th class="py-1.5 px-2 text-right bg-amber-50/80 whitespace-nowrap">재산세</th>
+                  <th class="py-1.5 px-2 text-right bg-amber-50/80 border-r border-amber-200 whitespace-nowrap">1인당 취득세</th>
+                  <!-- Pillar 4 -->
+                  <th class="py-1.5 px-2 text-right bg-sky-50/80 whitespace-nowrap">지방세 총액</th>
+                  <th class="py-1.5 px-2 text-center bg-sky-50/80 whitespace-nowrap">세수 YoY</th>
+                  <th class="py-1.5 px-2 text-right bg-sky-50/80 whitespace-nowrap">재정자립도</th>
+                </tr>
+              </thead>
+              <tbody id="micro-dashboard-tbody" class="divide-y divide-slate-100 font-mono bg-white/90">
+                <tr>
+                  <td colspan="16" class="py-6 text-center text-slate-400 font-sans">지자체 종합 진단 데이터를 불러오는 중입니다...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
-    </section>
-  </main>
+
+      <!-- ========================================================= -->
+      <!-- VIEW 3: [COMPARE] 지자체 1:1 및 다중 맞대결 비교 모드 -->
+      <!-- ========================================================= -->
+      <div id="view-compare" class="p-gutter-lg flex flex-col gap-4 hidden">
+        <!-- TOP: Compare Hero & District Matchup Selector Bar -->
+        <div class="luminous-glass rounded-xl p-card-md pl-6 sm:pl-7 flex flex-col gap-4 border-l-4 border-l-amber-500 shadow-sm">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <div class="flex items-center gap-2 text-slate-500 text-xs mb-1">
+                <span class="font-bold text-amber-700 flex items-center gap-1">
+                  <span class="material-symbols-outlined text-sm text-amber-600">swords</span>
+                  지자체 맞대결 비교 분석실
+                </span>
+                <span class="text-slate-300">|</span>
+                <span class="text-slate-600">전국 230개 기초자치단체 1:1 정밀 비교</span>
+                <span class="text-slate-300">|</span>
+                <span class="px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 text-[10px] font-bold">17개 전 지표 스펙 &amp; 5대 종합 역량</span>
+              </div>
+              <h2 class="text-2xl sm:text-3xl font-bold text-slate-900 glow-cyan-text flex items-center gap-2.5">
+                <span>지자체 맞대결 비교 (Compare Mode)</span>
+              </h2>
+            </div>
+            <!-- Quick Link to Explorer Mode -->
+            <button type="button" id="btn-compare-back-to-explorer" class="px-3.5 py-2 rounded-xl bg-white border border-sky-300 text-sky-700 font-bold text-xs hover:bg-sky-50 flex items-center gap-1.5 transition-all shadow-sm">
+              <span class="material-symbols-outlined text-sm">explore</span>
+              <span>🗺️ 공간 탐색 모드로 복귀</span>
+            </button>
+          </div>
+
+          <!-- District Matchup Selection Bar (Card A vs Card B with Swap) -->
+          <div class="grid grid-cols-1 md:grid-cols-11 gap-3 items-center pt-2 border-t border-sky-100">
+            <!-- Region A Card (Col 5) -->
+            <div class="md:col-span-5 bg-gradient-to-br from-sky-50/90 to-white/90 p-3.5 rounded-xl border-2 border-sky-300/80 shadow-sm flex flex-col gap-2 relative overflow-hidden">
+              <div class="flex items-center justify-between">
+                <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-sky-600 text-white shadow-xs flex items-center gap-1">
+                  <span class="w-2 h-2 rounded-full bg-white animate-pulse"></span>
+                  지자체 A (Primary Sky)
+                </span>
+                <span id="compare-diag-tag-a" class="px-2 py-0.5 rounded text-[11px] font-bold bg-sky-100 text-sky-800 border border-sky-200">진단 요약</span>
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-slate-500 mb-1">지자체 A 선택</label>
+                <select id="compare-select-a" class="w-full text-body-sm font-bold text-slate-900 bg-white border border-sky-300 rounded-lg py-1.5 px-2.5 shadow-sm focus:ring-2 focus:ring-sky-400">
+                  <option value="KR_11680" selected>서울특별시 강남구</option>
+                </select>
+              </div>
+              <div class="flex items-center justify-between text-xs text-slate-600 pt-1 border-t border-sky-100">
+                <span id="compare-header-full-a" class="font-medium text-slate-500">서울특별시 강남구</span>
+                <span class="text-[11px] text-sky-700 font-bold">라인 컬러: Sky Blue</span>
+              </div>
+            </div>
+
+            <!-- Matchup VS Badge & Swap Button (Col 1) -->
+            <div class="md:col-span-1 flex flex-col items-center justify-center gap-1 py-1">
+              <div class="w-9 h-9 rounded-full bg-gradient-to-tr from-amber-500 to-rose-500 text-white font-black text-xs flex items-center justify-center shadow-md ring-4 ring-white">
+                VS
+              </div>
+              <button type="button" id="btn-compare-swap" class="px-2 py-1 rounded-lg bg-white border border-slate-300 hover:border-amber-400 hover:bg-amber-50 text-slate-700 hover:text-amber-800 text-[11px] font-bold flex items-center gap-1 transition-all shadow-xs active:scale-95" title="지자체 A와 B 맞교환">
+                <span class="material-symbols-outlined text-xs text-amber-600">swap_horiz</span>
+                <span>교체</span>
+              </button>
+            </div>
+
+            <!-- Region B Card (Col 5) -->
+            <div class="md:col-span-5 bg-gradient-to-br from-amber-50/90 to-white/90 p-3.5 rounded-xl border-2 border-amber-300/80 shadow-sm flex flex-col gap-2 relative overflow-hidden">
+              <div class="flex items-center justify-between">
+                <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-600 text-white shadow-xs flex items-center gap-1">
+                  <span class="w-2 h-2 rounded-full bg-white animate-pulse"></span>
+                  지자체 B (Contrast Amber)
+                </span>
+                <span id="compare-diag-tag-b" class="px-2 py-0.5 rounded text-[11px] font-bold bg-amber-100 text-amber-800 border border-amber-200">진단 요약</span>
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-slate-500 mb-1">지자체 B 선택</label>
+                <select id="compare-select-b" class="w-full text-body-sm font-bold text-slate-900 bg-white border border-amber-300 rounded-lg py-1.5 px-2.5 shadow-sm focus:ring-2 focus:ring-amber-400">
+                  <option value="KR_41590" selected>경기도 화성시</option>
+                </select>
+              </div>
+              <div class="flex items-center justify-between text-xs text-slate-600 pt-1 border-t border-amber-100">
+                <span id="compare-header-full-b" class="font-medium text-slate-500">경기도 화성시</span>
+                <span class="text-[11px] text-amber-700 font-bold">라인 컬러: Amber/Orange</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Recommended Matchup Presets Chips -->
+          <div class="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100 text-xs">
+            <span class="text-slate-400 font-bold text-[11px] flex items-center gap-1">
+              <span class="material-symbols-outlined text-xs text-amber-600">local_fire_department</span>
+              추천 맞대결:
+            </span>
+            <button type="button" class="compare-preset-btn px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 font-medium hover:bg-sky-50 hover:border-sky-300 hover:text-sky-800 transition-all text-[11px] shadow-xs" data-a="KR_11680" data-b="KR_41590">
+              🔥 서울 강남 vs 경기 화성 (부유 vs 신성장)
+            </button>
+            <button type="button" class="compare-preset-btn px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 font-medium hover:bg-sky-50 hover:border-sky-300 hover:text-sky-800 transition-all text-[11px] shadow-xs" data-a="KR_26350" data-b="KR_27260">
+              🌊 부산 해운대 vs 대구 수성 (영남 양대 중심)
+            </button>
+            <button type="button" class="compare-preset-btn px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 font-medium hover:bg-sky-50 hover:border-sky-300 hover:text-sky-800 transition-all text-[11px] shadow-xs" data-a="KR_41130" data-b="KR_41110">
+              🏙️ 경기 성남 vs 경기 수원 (경기 남부 메가시티)
+            </button>
+            <button type="button" class="compare-preset-btn px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 font-medium hover:bg-sky-50 hover:border-sky-300 hover:text-sky-800 transition-all text-[11px] shadow-xs" data-a="KR_11440" data-b="KR_11200">
+              🌿 서울 마포 vs 서울 성동 (한강변 신흥벨트)
+            </button>
+            <button type="button" class="compare-preset-btn px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 font-medium hover:bg-sky-50 hover:border-sky-300 hover:text-sky-800 transition-all text-[11px] shadow-xs" data-a="KR_46910" data-b="KR_27720">
+              🌾 전남 신안 vs 대구 군위 (소멸위기 살림 비교)
+            </button>
+          </div>
+        </div>
+
+        <!-- EXECUTIVE SHOWDOWN SCOREBOARD BANNER -->
+        <div id="compare-scoreboard" class="rounded-xl p-4 bg-gradient-to-r from-slate-900 via-sky-950 to-amber-950 text-white shadow-md flex flex-col md:flex-row items-center justify-between gap-4 border border-slate-800 relative overflow-hidden">
+          <div class="flex-1 z-10 text-center md:text-left">
+            <div class="flex flex-wrap items-center justify-center md:justify-start gap-2 mb-1">
+              <span class="text-[11px] font-bold text-amber-300 tracking-wider uppercase flex items-center gap-1">
+                <span class="material-symbols-outlined text-sm text-amber-400">emoji_events</span>
+                17개 지표 종합 승패 판정
+              </span>
+            </div>
+            <p id="scoreboard-verdict-text" class="text-xs sm:text-sm font-medium text-slate-200 leading-relaxed">
+              두 지자체의 17개 핵심 통계를 맞대결 분석 중입니다...
+            </p>
+          </div>
+
+          <!-- Score Badges -->
+          <div class="flex items-center gap-4 z-10 shrink-0">
+            <div class="bg-sky-500/20 border border-sky-400/40 rounded-xl px-4 py-2 text-center">
+              <span class="text-[10px] text-sky-300 font-semibold block">지자체 A</span>
+              <span id="scoreboard-wins-a" class="text-2xl font-black text-sky-400 font-mono">-승</span>
+            </div>
+            <span class="text-slate-400 font-bold text-sm">VS</span>
+            <div class="bg-amber-500/20 border border-amber-400/40 rounded-xl px-4 py-2 text-center">
+              <span class="text-[10px] text-amber-300 font-semibold block">지자체 B</span>
+              <span id="scoreboard-wins-b" class="text-2xl font-black text-amber-400 font-mono">-승</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2-COLUMN ANALYTICAL CHARTS: Radar Chart vs Timeseries Overlay Chart -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <!-- Chart 1: 5-Axis Comprehensive Radar Chart -->
+          <div class="luminous-glass rounded-xl p-card-md flex flex-col gap-3 shadow-sm">
+            <div class="flex flex-wrap items-center justify-between pb-2 border-b border-sky-100 gap-2">
+              <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-indigo-600 text-base">radar</span>
+                <h3 class="text-body-md font-bold text-slate-900">
+                  🕸️ 5대 종합 역량 거미줄 차트 (전국 백분위 0~100)
+                </h3>
+              </div>
+              <span class="text-[11px] text-slate-500 font-medium bg-white px-2 py-0.5 rounded border border-slate-200">
+                100점: 전국 1위 최상위
+              </span>
+            </div>
+            <p class="text-xs text-slate-500">
+              재정자립도, 1인당 지방세, 인구규모, 합계출산율, 사업체수 5대 핵심 축을 전국 230개 자치단체 내 상대평가 점수로 환산하여 비교합니다.
+            </p>
+            <div class="relative w-full h-80 bg-white/70 rounded-lg border border-indigo-100 p-2 shadow-inner">
+              <canvas id="compare-radar-chart"></canvas>
+            </div>
+          </div>
+
+          <!-- Chart 2: 15-Year Timeseries Overlay Line Chart -->
+          <div class="luminous-glass rounded-xl p-card-md flex flex-col gap-3 shadow-sm">
+            <div class="flex flex-wrap items-center justify-between pb-2 border-b border-sky-100 gap-2">
+              <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-sky-600 text-base">show_chart</span>
+                <h3 class="text-body-md font-bold text-slate-900">
+                  📈 15개년 시계열 추세 오버레이 ({{ min_year }}~{{ max_year }})
+                </h3>
+              </div>
+              <!-- Timeseries Indicator Switcher -->
+              <div class="flex items-center gap-1.5">
+                <label for="compare-indicator-select" class="text-[11px] font-bold text-slate-500">지표:</label>
+                <select id="compare-indicator-select" class="text-xs font-bold text-sky-900 bg-white border border-sky-300 rounded-lg py-1 px-2 shadow-sm focus:ring-1 focus:ring-sky-400">
+                  <option value="LOCAL_TAX_TOTAL_PER_CAPITA" selected>1인당 지방세 (원)</option>
+                  <option value="FISCAL_INDEPENDENCE">재정자립도 (%)</option>
+                  <option value="POPULATION">주민등록인구 (명)</option>
+                  <option value="ACQUISITION_TAX">취득세 세입액 (천원)</option>
+                  <option value="PROPERTY_TAX">재산세 세입액 (원)</option>
+                  <option value="LOCAL_INCOME_TAX">지방소득세 세입액 (원)</option>
+                  <option value="AVERAGE_WAGE">주민 1인당 평균 연봉 (원)</option>
+                  <option value="CORPORATE_TOTAL_PAYROLL">사업장 총급여액 (원)</option>
+                  <option value="TOTAL_FERTILITY_RATE">합계출산율 (명)</option>
+                  <option value="BUSINESS_ESTABLISHMENTS">가동 사업체 수 (개)</option>
+                </select>
+              </div>
+            </div>
+            <p class="text-xs text-slate-500">
+              동일한 스케일 위에서 두 지자체의 15개년 장기 성장 궤적과 변곡점을 직접 오버레이하여 추세 격차를 분석합니다.
+            </p>
+            <div class="relative w-full h-80 bg-white/70 rounded-lg border border-sky-100 p-2 shadow-inner">
+              <canvas id="compare-timeseries-chart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- 17-INDICATOR HEAD-TO-HEAD SPEC SHOWDOWN TABLE -->
+        <div class="luminous-glass rounded-xl p-card-md flex flex-col gap-2 shadow-sm">
+          <div class="flex flex-wrap items-center justify-between pb-2 border-b border-sky-100 gap-2">
+            <div class="flex items-center gap-2">
+              <span class="material-symbols-outlined text-amber-600 text-base">table_view</span>
+              <h3 class="text-body-md font-bold text-slate-900">
+                ⚔️ 17개 전 지표 맞대결 스펙 비교 테이블
+              </h3>
+            </div>
+            <div class="flex items-center gap-2 text-xs text-slate-500">
+              <span class="px-2 py-0.5 rounded bg-sky-50 text-sky-800 border border-sky-200 font-bold">지자체 A</span>
+              <span>vs</span>
+              <span class="px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200 font-bold">지자체 B</span>
+            </div>
+          </div>
+
+          <div class="w-full overflow-x-auto max-h-[560px] rounded-lg border border-sky-200 shadow-inner">
+            <table id="compare-table" class="w-full text-left border-collapse text-xs">
+              <thead class="sticky top-0 z-20 shadow-sm backdrop-blur-md">
+                <tr class="h-9 border-b border-sky-200 bg-sky-100/95 text-sky-950 font-bold text-[11px]">
+                  <th class="py-2 px-3 whitespace-nowrap">분야 및 지표명</th>
+                  <th class="py-2 px-2 text-center whitespace-nowrap">기준 연도</th>
+                  <th class="py-2 px-2 text-center whitespace-nowrap">단위</th>
+                  <th class="py-2 px-3 text-right bg-sky-200/90 text-sky-950 whitespace-nowrap border-l border-sky-300">
+                    지자체 A 수치 &amp; 전국 순위
+                  </th>
+                  <th class="py-2 px-3 text-right bg-amber-200/90 text-amber-950 whitespace-nowrap border-l border-amber-300">
+                    지자체 B 수치 &amp; 전국 순위
+                  </th>
+                  <th class="py-2 px-3 text-right whitespace-nowrap border-l border-sky-200">격차 (A - B)</th>
+                  <th class="py-2 px-3 text-center whitespace-nowrap border-l border-sky-200">우세 지자체 판정</th>
+                </tr>
+              </thead>
+              <tbody id="compare-table-tbody" class="divide-y divide-slate-100 bg-white/90">
+                <tr>
+                  <td colspan="7" class="py-8 text-center text-slate-400 font-sans">
+                    지자체 맞대결 데이터를 불러오는 중입니다...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- DATA PROVENANCE & LINEAGE AUDIT BAR -->
+      <section class="mx-gutter-lg mt-1 mb-3 p-card-sm rounded-xl luminous-glass flex flex-col md:flex-row items-start md:items-center justify-between gap-3 text-body-sm font-body-sm">
+        <div class="flex flex-wrap items-center gap-4 text-slate-600 text-xs">
+          <div class="flex items-center gap-1.5 text-slate-900 font-bold">
+            <span class="material-symbols-outlined text-sky-600 text-base drop-shadow-[0_0_4px_rgba(2,132,199,0.3)]">verified_user</span>
+            <span>공공데이터 신뢰성 검증:</span>
+          </div>
+          <span class="font-medium text-slate-700">통계청 KOSIS</span>
+          <span>·</span>
+          <span class="font-medium text-slate-700">행정안전부 지방재정365</span>
+          <span>·</span>
+          <span class="font-medium text-slate-700">SGIS 공간정보</span>
+          <span class="hidden xl:inline text-sky-200">|</span>
+          <span class="hidden xl:inline text-[11px] text-slate-500">수집주기: 연간 확정치 반영 | 전국 230개 자치단체</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-slate-400">품질 상태: 단일 계보 검증 완료</span>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- FOOTER (Frosted White Aurora Glass) -->
+  <footer class="w-full lg:pl-64 pr-gutter-xl py-gutter-sm flex flex-col md:flex-row justify-between items-center text-slate-500 text-label-sm font-label-sm border-t border-sky-100 bg-white/75 backdrop-blur-xl z-20">
+    <div>
+      © {{ min_year }}-{{ max_year }} 대한민국 지방재정·인구 통합통계 데이터 익스플로러. KOSIS & SGIS Open Data.
+    </div>
+    <div class="flex items-center gap-4 mt-2 md:mt-0">
+      <span class="text-slate-600">지자체 탐색기 v2.0 (White & Sky Blue Aurora Glass)</span>
+    </div>
+  </footer>
+
+  <!-- ========================================================= -->
+  <!-- [MODAL] 바 차트 레이스 (순위 변천사) 쇼츠/릴스 비디오 제작 모달 -->
+  <!-- ========================================================= -->
+  <div id="race-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md hidden">
+    <div class="relative w-full max-w-5xl bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl flex flex-col max-h-[92vh] overflow-hidden text-slate-100">
+      
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-900/90">
+        <div class="flex items-center gap-3">
+          <span class="p-2 rounded-xl bg-gradient-to-tr from-rose-500 to-amber-500 text-white shadow-lg flex items-center justify-center">
+            <span class="material-symbols-outlined text-xl">movie</span>
+          </span>
+          <div>
+            <h2 class="text-lg font-bold text-white flex items-center gap-2">
+              <span>바 차트 레이스 (순위 변천사) 쇼츠 제작기</span>
+              <span class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30">Shorts / Reels Ready</span>
+            </h2>
+            <p class="text-xs text-slate-400">{{ min_year }}년부터 {{ max_year }}년까지 지자체 순위 역전 레이스를 고화질 영상으로 녹화·다운로드합니다.</p>
+          </div>
+        </div>
+        <button type="button" id="btn-close-race-modal" class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors">
+          <span class="material-symbols-outlined text-2xl">close</span>
+        </button>
+      </div>
+
+      <!-- Modal Body (Control Bar + Canvas Stage) -->
+      <div class="flex flex-col flex-1 overflow-hidden p-6 gap-4 bg-slate-950/60">
+        
+        <!-- Setting Controls Bar -->
+        <div class="grid grid-cols-2 sm:grid-cols-5 gap-2.5 p-3 bg-slate-900/90 rounded-xl border border-slate-800 text-xs">
+          <div>
+            <label class="block font-semibold text-slate-400 mb-1">시각화 지표</label>
+            <select id="race-indicator-select" class="w-full bg-slate-800 border border-slate-700 text-white rounded-lg py-1.5 px-2 focus:ring-1 focus:ring-sky-400">
+              <optgroup label="✨ 1인당 소득 &amp; 재정 지표 (추천)">
+                <option value="AVERAGE_WAGE">주민 1인당 평균 연봉 (원)</option>
+                <option value="ACQUISITION_TAX_PER_CAPITA">1인당 취득세 (원/인)</option>
+                <option value="LOCAL_TAX_TOTAL_PER_CAPITA">1인당 지방세 총액 (원/인)</option>
+                <option value="LOCAL_INCOME_TAX_PER_CAPITA">1인당 지방소득세 (원/인)</option>
+                <option value="PROPERTY_TAX_PER_CAPITA">1인당 재산세 (원/인)</option>
+                <option value="BUSINESSES_PER_THOUSAND">인구 천명당 사업체 수 (개)</option>
+              </optgroup>
+              <optgroup label="🏛️ 지방세 &amp; 기업 일자리">
+                <option value="CORPORATE_TOTAL_PAYROLL">사업장 총급여액 (원)</option>
+                <option value="WITHHOLDING_TAX">원천징수세액 (원)</option>
+                <option value="ACQUISITION_TAX" selected>취득세 세입액 (원)</option>
+                <option value="LOCAL_TAX_TOTAL">지방세 총 세입액 (원)</option>
+                <option value="LOCAL_INCOME_TAX">지방소득세 세입액 (원)</option>
+                <option value="PROPERTY_TAX">재산세 세입액 (원)</option>
+                <option value="FISCAL_INDEPENDENCE">재정자립도 (%)</option>
+              </optgroup>
+              <optgroup label="👥 인구 및 지역 경제">
+                <option value="POPULATION">주민등록인구 (명)</option>
+                <option value="BUSINESS_ESTABLISHMENTS">가동 사업체 수 (개)</option>
+                <option value="ELDERLY_POPULATION_RATIO">고령인구 비율 (%)</option>
+                <option value="TOTAL_FERTILITY_RATE">합계출산율 (명)</option>
+              </optgroup>
+            </select>
+          </div>
+
+          <div>
+            <label class="block font-semibold text-sky-400 mb-1 flex items-center gap-1">
+              <span class="material-symbols-outlined text-[13px]">location_on</span>
+              <span>대상 지역 범위</span>
+            </label>
+            <select id="race-province-select" class="w-full bg-slate-800 border border-slate-700 text-white rounded-lg py-1.5 px-2 focus:ring-1 focus:ring-sky-400 font-medium">
+              <option value="" selected>전국 전체 (230개 자치단체)</option>
+              <option value="SUDOGWON">수도권 (서울·경기·인천)</option>
+              <option value="KR_11">서울특별시 (25개 구)</option>
+              <option value="KR_41">경기도 (31개 시·군)</option>
+              <option value="KR_26">부산광역시 (16개 구·군)</option>
+              <option value="KR_27">대구광역시 (8개 구·군)</option>
+              <option value="KR_28">인천광역시 (10개 구·군)</option>
+              <option value="KR_29">광주광역시 (5개 구)</option>
+              <option value="KR_30">대전광역시 (5개 구)</option>
+              <option value="KR_31">울산광역시 (5개 구·군)</option>
+              <option value="KR_36">세종특별자치시</option>
+              <option value="KR_51">강원특별자치도 (18개 시·군)</option>
+              <option value="KR_43">충청북도 (11개 시·군)</option>
+              <option value="KR_44">충청남도 (15개 시·군)</option>
+              <option value="KR_52">전북특별자치도 (14개 시·군)</option>
+              <option value="KR_46">전라남도 (22개 시·군)</option>
+              <option value="KR_47">경상북도 (23개 시·군)</option>
+              <option value="KR_48">경상남도 (18개 시·군)</option>
+              <option value="KR_50">제주특별자치도 (2개 시)</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block font-semibold text-slate-400 mb-1">영상 비율 (플랫폼)</label>
+            <select id="race-aspect-select" class="w-full bg-slate-800 border border-slate-700 text-white rounded-lg py-1.5 px-2 focus:ring-1 focus:ring-rose-400">
+              <option value="9:16" selected>📱 9:16 세로형 (쇼츠/릴스)</option>
+              <option value="16:9">🖥️ 16:9 가로형 (일반 영상)</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block font-semibold text-slate-400 mb-1">노출 순위 범위</label>
+            <select id="race-topn-select" class="w-full bg-slate-800 border border-slate-700 text-white rounded-lg py-1.5 px-2 focus:ring-1 focus:ring-sky-400">
+              <option value="10" selected>TOP 10 지자체</option>
+              <option value="20">TOP 20 지자체</option>
+              <option value="50">TOP 50 지자체</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block font-semibold text-slate-400 mb-1">연도 전환 속도</label>
+            <select id="race-speed-select" class="w-full bg-slate-800 border border-slate-700 text-white rounded-lg py-1.5 px-2 focus:ring-1 focus:ring-sky-400">
+              <option value="2500">느림 (2.5초/년, 총 35초)</option>
+              <option value="1800" selected>보통 (1.8초/년, 총 25초)</option>
+              <option value="1200">빠름 (1.2초/년, 총 17초)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Custom Video Title / Subtitle & BGM Audio Controls -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-3 p-3 bg-slate-900/90 rounded-xl border border-slate-800 text-xs">
+          <div>
+            <label class="block font-semibold text-sky-400 mb-1 flex items-center gap-1">
+              <span class="material-symbols-outlined text-xs">edit_note</span>
+              <span>상단 메인 헤드라인 (직접 수정 가능)</span>
+            </label>
+            <input type="text" id="race-custom-title" value="전국 지자체 {{ total_years }}개년" placeholder="예: 전국 지자체 {{ total_years }}개년, {{ min_year }}-{{ max_year }} 순위 등" class="w-full bg-slate-800 border border-slate-700 text-white rounded-lg py-1.5 px-2.5 focus:ring-1 focus:ring-sky-400 placeholder:text-slate-500 font-medium">
+          </div>
+          <div>
+            <label class="block font-semibold text-cyan-400 mb-1 flex items-center gap-1">
+              <span class="material-symbols-outlined text-xs">subtitles</span>
+              <span>상단 지표 서브타이틀 (비워두면 자동 생성)</span>
+            </label>
+            <input type="text" id="race-custom-subtitle" value="" placeholder="자동 생성 (예: 1인당 취득세 TOP 10)" class="w-full bg-slate-800 border border-slate-700 text-white rounded-lg py-1.5 px-2.5 focus:ring-1 focus:ring-sky-400 placeholder:text-slate-500 font-medium">
+          </div>
+          <!-- BGM 음악 파일 선택 및 볼륨 -->
+          <div class="flex flex-col justify-between">
+            <label class="block font-semibold text-amber-400 mb-1 flex items-center justify-between">
+              <span class="flex items-center gap-1">
+                <span class="material-symbols-outlined text-xs">music_note</span>
+                <span>배경음악 (내 PC 음악 파일 합성)</span>
+              </span>
+              <span id="race-bgm-volume-text" class="text-[10px] text-slate-400 font-mono">볼륨 60%</span>
+            </label>
+            <div class="flex items-center gap-2">
+              <input type="file" id="race-bgm-file" accept="audio/*" class="hidden">
+              <button type="button" id="btn-select-bgm" class="px-2.5 py-1.5 rounded-lg bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 border border-amber-500/40 font-semibold text-[11px] transition-colors flex items-center gap-1 shrink-0">
+                <span class="material-symbols-outlined text-xs">upload_file</span>
+                <span>음악 파일 선택</span>
+              </button>
+              <div class="flex-1 flex items-center gap-1 min-w-0 bg-slate-800/80 rounded-lg px-2 py-1 border border-slate-700/80">
+                <span id="race-bgm-filename" class="text-[11px] text-slate-400 truncate select-none">선택 안 됨 (무음 녹화)</span>
+                <button type="button" id="btn-remove-bgm" class="text-slate-400 hover:text-rose-400 transition-colors hidden shrink-0" title="음악 제거">
+                  <span class="material-symbols-outlined text-xs">cancel</span>
+                </button>
+              </div>
+              <input type="range" id="race-bgm-volume" min="0" max="100" value="60" class="w-16 accent-amber-400 cursor-pointer" title="음악 볼륨">
+            </div>
+          </div>
+        </div>
+
+        <!-- Canvas Stage Container -->
+        <div class="flex-1 flex items-center justify-center overflow-hidden relative min-h-[360px] bg-slate-900 rounded-xl border border-slate-800 p-2">
+          <canvas id="race-canvas" class="rounded-lg shadow-2xl transition-all duration-300"></canvas>
+        </div>
+
+        <!-- Progress bar & Status -->
+        <div class="flex flex-col gap-1.5">
+          <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+            <div id="race-progress-fill" class="h-full bg-gradient-to-r from-sky-400 via-rose-500 to-amber-400 transition-all duration-100" style="width: 0%;"></div>
+          </div>
+          <div class="flex items-center justify-between text-xs text-slate-400">
+            <span id="race-status-text" class="flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+              <span>준비 완료</span>
+            </span>
+            <span class="text-slate-500">60FPS 하드웨어 가속 렌더링 · Web Audio Muxing</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Footer Action Buttons -->
+      <div class="flex flex-wrap items-center justify-between px-6 py-3.5 border-t border-slate-800 bg-slate-900 gap-3">
+        <!-- Quick Export Tools (Thumbnail & Tags) -->
+        <div class="flex items-center gap-2">
+          <button type="button" id="btn-race-thumbnail" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white font-medium text-xs transition-colors flex items-center gap-1.5 border border-slate-700 shadow-sm" title="현재 화면을 고화질 PNG 썸네일로 즉시 저장">
+            <span class="material-symbols-outlined text-sm text-sky-400">photo_camera</span>
+            <span>썸네일(PNG) 저장</span>
+          </button>
+          <button type="button" id="btn-race-copy-tags" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white font-medium text-xs transition-colors flex items-center gap-1.5 border border-slate-700 shadow-sm" title="유튜브 쇼츠 업로드용 제목/설명/해시태그 클립보드 복사">
+            <span class="material-symbols-outlined text-sm text-emerald-400">content_copy</span>
+            <span>쇼츠 텍스트 복사</span>
+          </button>
+        </div>
+
+        <!-- Play & Record Controls -->
+        <div class="flex items-center gap-3">
+          <button type="button" id="btn-race-play" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs transition-colors flex items-center gap-1.5 border border-slate-700">
+            <span class="material-symbols-outlined text-sm">play_arrow</span>
+            <span>미리보기 재생</span>
+          </button>
+          <button type="button" id="btn-race-record" class="px-5 py-2 rounded-xl bg-gradient-to-r from-rose-500 via-pink-600 to-red-600 hover:brightness-110 active:scale-[0.98] text-white font-bold text-xs transition-all shadow-lg shadow-rose-900/40 flex items-center gap-1.5">
+            <span class="material-symbols-outlined text-sm">videocam</span>
+            <span>쇼츠 영상 녹화 &amp; 다운로드</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- ========================================================= -->
+  <!-- [MODAL] 데이터 출처별 최신화 상태 및 동기화 모달 -->
+  <!-- ========================================================= -->
+  <div id="sync-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md hidden">
+    <div class="relative w-full max-w-2xl bg-white border border-slate-200 rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden text-slate-800">
+      
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between px-6 py-4 border-b border-sky-100 bg-sky-50/70">
+        <div class="flex items-center gap-3">
+          <span class="p-2 rounded-xl bg-gradient-to-tr from-sky-500 to-cyan-600 text-white shadow-md flex items-center justify-center">
+            <span class="material-symbols-outlined text-xl">sync</span>
+          </span>
+          <div>
+            <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+              <span>공공데이터 출처별 최신화 관리</span>
+              <span id="sync-overall-badge" class="px-2 py-0.5 text-[11px] font-bold rounded-full bg-sky-100 text-sky-800 border border-sky-200">조회 중...</span>
+            </h2>
+            <p class="text-xs text-slate-500">통계청(KOSIS) 및 행안부 데이터 공표 주기에 맞추어 독립 동기화합니다.</p>
+          </div>
+        </div>
+        <button type="button" id="btn-close-sync-modal" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors">
+          <span class="material-symbols-outlined text-2xl">close</span>
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="flex flex-col flex-1 overflow-y-auto p-6 gap-3.5 bg-slate-50/50 text-xs">
+        
+        <!-- Information Banner -->
+        <div class="p-3 rounded-xl bg-sky-50 border border-sky-200/80 flex items-start gap-2.5 text-slate-600">
+          <span class="material-symbols-outlined text-sky-600 text-base shrink-0 mt-0.5">info</span>
+          <div class="text-[11px] leading-relaxed">
+            공공데이터는 부처별 공표 시기가 다릅니다. (예: 인구는 매년 1월 공표, 지방세 결산은 연말 공표)<br/>
+            새로운 연도 데이터가 나온 지표부터 먼저 <strong>개별 동기화</strong>하여 화면에 즉시 반영할 수 있습니다.
+          </div>
+        </div>
+
+        <!-- Category Items Container -->
+        <div id="sync-categories-list" class="flex flex-col gap-2.5">
+          <div class="p-8 text-center text-slate-400 flex flex-col items-center justify-center gap-2">
+            <span class="material-symbols-outlined text-2xl animate-spin text-sky-600">progress_activity</span>
+            <span>통계청(KOSIS) 최신 등록 현황을 찔러보는 중입니다...</span>
+          </div>
+        </div>
+
+        <!-- Sync Progress / Status Alert (Hidden by default) -->
+        <div id="sync-progress-box" class="hidden p-3.5 rounded-xl border flex flex-col gap-2 transition-all">
+          <div class="flex items-center justify-between">
+            <span id="sync-progress-text" class="font-bold text-xs">진행 중...</span>
+            <span id="sync-progress-spinner" class="material-symbols-outlined text-sm animate-spin">progress_activity</span>
+          </div>
+          <div class="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
+            <div id="sync-progress-bar" class="h-full bg-sky-600 transition-all duration-300" style="width: 50%;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="flex items-center justify-between px-6 py-3.5 border-t border-slate-200 bg-white">
+        <span id="sync-last-checked" class="text-[11px] text-slate-400">마지막 확인: -</span>
+        <div class="flex items-center gap-2">
+          <button type="button" id="btn-force-check-updates" class="px-3.5 py-1.5 rounded-lg border border-sky-300 text-sky-700 hover:bg-sky-50 font-semibold text-xs flex items-center gap-1 transition-all shadow-sm">
+            <span class="material-symbols-outlined text-sm">refresh</span>
+            <span>지금 다시 확인</span>
+          </button>
+          <button type="button" id="btn-close-sync-modal-btn" class="px-4 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs transition-colors">
+            닫기
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <div id="live-status" class="sr-only" aria-live="polite"></div>
 
+  <!-- App Logic & Video Generator -->
+  <script src="{% static 'explorer/race_recorder.js' %}"></script>
   <script src="{% static 'explorer/app.js' %}"></script>
+  <script src="{% static 'explorer/sync_manager.js' %}"></script>
+  <script src="{% static 'explorer/compare_manager.js' %}"></script>
+  <script>
+    // Timeline scrubber buttons event binding
+    document.addEventListener("DOMContentLoaded", () => {
+      const yearSelect = document.getElementById("year-select");
+      const scrubberPills = document.querySelectorAll(".year-pill");
+
+      function updateScrubberActive(selectedYear) {
+        scrubberPills.forEach(pill => {
+          const y = pill.getAttribute("data-year");
+          if (y === selectedYear) {
+            pill.className = "year-pill px-2.5 py-1 rounded text-label-sm font-label-sm bg-gradient-to-r from-sky-600 to-cyan-600 text-white font-bold shadow-[0_3px_10px_rgba(2,132,199,0.35)] transition-all";
+          } else {
+            pill.className = "year-pill px-2.5 py-1 rounded text-label-sm font-label-sm text-slate-600 hover:text-sky-800 hover:bg-sky-100/60 font-medium transition-all";
+          }
+        });
+      }
+
+      scrubberPills.forEach(pill => {
+        pill.addEventListener("click", () => {
+          const targetYear = pill.getAttribute("data-year");
+          if (targetYear && yearSelect.value !== targetYear) {
+            yearSelect.value = targetYear;
+            yearSelect.dispatchEvent(new Event("change"));
+            updateScrubberActive(targetYear);
+          }
+        });
+      });
+
+      if (yearSelect) {
+        yearSelect.addEventListener("change", () => {
+          updateScrubberActive(yearSelect.value);
+        });
+      }
+    });
+  </script>
 </body>
 </html>
 

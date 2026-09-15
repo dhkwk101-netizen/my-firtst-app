@@ -1,36 +1,36 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 :root {
-  /* Stitch Design System Tokens: Regional Insights Matrix */
+  /* Stitch Design System Tokens: White & Sky Blue Aurora Glass */
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Pretendard", "Segoe UI", Roboto, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
 
-  /* Surfaces & Elevation */
-  --bg-base: #0b0f19;
-  --bg-surface-1: #0f172a;
-  --bg-surface-2: #1e293b;
-  --bg-surface-3: #262a35;
-  --bg-surface-translucent: rgba(15, 23, 42, 0.75);
-  --bg-card-translucent: rgba(30, 41, 59, 0.65);
+  /* Surfaces & Elevation (Light Aurora Glass) */
+  --bg-base: #f0f7ff;
+  --bg-surface-1: rgba(255, 255, 255, 0.75);
+  --bg-surface-2: rgba(240, 249, 255, 0.85);
+  --bg-surface-3: rgba(224, 242, 254, 0.6);
+  --bg-surface-translucent: rgba(255, 255, 255, 0.7);
+  --bg-card-translucent: rgba(255, 255, 255, 0.65);
 
   /* Borders & Glows */
-  --border-subtle: rgba(51, 65, 85, 0.5);
-  --border-focus: rgba(56, 189, 248, 0.4);
-  --hairline-top: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.02) 100%);
-  --glow-cyan: 0 0 20px -5px rgba(56, 189, 248, 0.3);
-  --glow-indigo: 0 0 20px -5px rgba(99, 102, 241, 0.3);
+  --border-subtle: rgba(56, 189, 248, 0.18);
+  --border-focus: rgba(14, 165, 233, 0.45);
+  --hairline-top: linear-gradient(180deg, rgba(255, 255, 255, 0.9) 0%, rgba(56, 189, 248, 0.1) 100%);
+  --glow-cyan: 0 8px 32px -8px rgba(56, 189, 248, 0.15);
+  --glow-indigo: 0 8px 32px -8px rgba(99, 102, 241, 0.12);
 
   /* Typography Colors */
-  --text-primary: #f8fafc;
-  --text-secondary: #94a3b8;
-  --text-muted: #64748b;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
 
   /* Semantic Accents */
-  --accent-cyan: #38bdf8;
+  --accent-cyan: #0ea5e9;
   --accent-indigo: #6366f1;
-  --accent-emerald: #10b981;
-  --accent-amber: #f59e0b;
-  --accent-rose: #f43f5e;
+  --accent-emerald: #059669;
+  --accent-amber: #d97706;
+  --accent-rose: #e11d48;
 
   /* Geometry & Radius */
   --radius-sm: 4px;
@@ -49,8 +49,9 @@ body {
   font-family: var(--font-sans);
   background-color: var(--bg-base);
   background-image: 
-    radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.07) 0px, transparent 50%),
-    radial-gradient(at 100% 100%, rgba(99, 102, 241, 0.07) 0px, transparent 50%);
+    radial-gradient(ellipse at 20% 0%, rgba(56, 189, 248, 0.12) 0px, transparent 60%),
+    radial-gradient(ellipse at 80% 100%, rgba(147, 197, 253, 0.10) 0px, transparent 55%),
+    radial-gradient(ellipse at 50% 50%, rgba(224, 242, 254, 0.15) 0px, transparent 70%);
   background-attachment: fixed;
   color: var(--text-primary);
   line-height: 1.5;
@@ -100,7 +101,7 @@ body {
   font-size: 1.5rem;
   font-weight: 700;
   letter-spacing: -0.03em;
-  background: linear-gradient(135deg, #ffffff 30%, #93c5fd 100%);
+  background: linear-gradient(135deg, #0f172a 30%, #0369a1 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   display: flex;
@@ -132,7 +133,7 @@ body {
   font-family: var(--font-mono);
   background: rgba(16, 185, 129, 0.1);
   border: 1px solid rgba(16, 185, 129, 0.3);
-  color: #34d399;
+  color: #059669;
 }
 
 .status-dot {
@@ -296,10 +297,10 @@ body {
 
 /* Selected District Hero Banner */
 .region-hero-card {
-  background: linear-gradient(135deg, rgba(30, 41, 59, 0.75) 0%, rgba(15, 23, 42, 0.85) 100%);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.85) 0%, rgba(224, 242, 254, 0.75) 100%);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-  border: 1px solid rgba(56, 189, 248, 0.25);
+  border: 1px solid rgba(56, 189, 248, 0.35);
   border-radius: var(--radius-lg);
   padding: 1.25rem 1.75rem;
   display: flex;
@@ -307,7 +308,7 @@ body {
   align-items: center;
   flex-wrap: wrap;
   gap: 1.25rem;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 8px 30px rgba(56, 189, 248, 0.12);
 }
 
 .region-hero-left {
@@ -330,14 +331,14 @@ body {
   font-weight: 600;
   background: rgba(99, 102, 241, 0.2);
   border: 1px solid rgba(99, 102, 241, 0.4);
-  color: #a5b4fc;
+  color: #4f46e5;
   font-family: var(--font-mono);
 }
 
 .region-title-row h2 {
   font-size: 1.75rem;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text-primary);
   letter-spacing: -0.02em;
 }
 
@@ -353,7 +354,7 @@ body {
 }
 
 .hero-desc strong {
-  color: #fbbf24;
+  color: #0284c7;
   font-weight: 700;
   font-size: 1.05rem;
 }
@@ -382,18 +383,19 @@ body {
 
 .chip-btn {
   padding: 0.35rem 0.75rem;
-  background: rgba(15, 23, 42, 0.6);
-  border: 1px solid rgba(51, 65, 85, 0.6);
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(56, 189, 248, 0.3);
   border-radius: var(--radius-full);
   color: var(--text-secondary);
   font-size: 0.8rem;
   font-family: inherit;
   cursor: pointer;
   transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .chip-btn:hover {
-  background: rgba(56, 189, 248, 0.15);
+  background: rgba(56, 189, 248, 0.2);
   border-color: var(--accent-cyan);
   color: var(--text-primary);
   transform: translateY(-1px);
@@ -459,7 +461,7 @@ body {
 .kpi-value {
   font-size: 1.85rem;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text-primary);
   font-family: var(--font-mono);
   font-feature-settings: "tnum" 1;
   letter-spacing: -0.02em;
@@ -531,12 +533,12 @@ body {
 .pop-badge {
   background: rgba(168, 85, 247, 0.12);
   border-color: rgba(168, 85, 247, 0.3);
-  color: #c084fc;
+  color: #9333ea;
 }
 
 .highlight-derived {
-  color: #fbbf24 !important;
-  text-shadow: 0 0 16px rgba(251, 191, 36, 0.35);
+  color: #0284c7 !important;
+  text-shadow: none;
 }
 
 .kpi-footnote {
@@ -609,7 +611,7 @@ body {
   width: 100%;
   height: 480px;
   border-radius: var(--radius-md);
-  background: #090d16;
+  background: #e8f4f8;
   border: 1px solid rgba(51, 65, 85, 0.4);
   z-index: 1;
 }
@@ -620,12 +622,12 @@ body {
 }
 
 .leaflet-tooltip {
-  background: rgba(15, 23, 42, 0.92) !important;
+  background: rgba(255, 255, 255, 0.95) !important;
   backdrop-filter: blur(12px) !important;
-  border: 1px solid rgba(56, 189, 248, 0.4) !important;
+  border: 1px solid rgba(14, 165, 233, 0.3) !important;
   border-radius: var(--radius-md) !important;
-  color: var(--text-primary) !important;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5) !important;
+  color: #1e293b !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1) !important;
   padding: 0.5rem 0.75rem !important;
 }
 
@@ -633,13 +635,13 @@ body {
 .leaflet-tooltip-bottom:before,
 .leaflet-tooltip-left:before,
 .leaflet-tooltip-right:before {
-  border-top-color: rgba(56, 189, 248, 0.4) !important;
+  border-top-color: rgba(14, 165, 233, 0.3) !important;
 }
 
 /* Leaflet Map Legend */
 .map-legend {
   padding: 0.75rem 1rem !important;
-  background: rgba(15, 23, 42, 0.92) !important;
+  background: rgba(255, 255, 255, 0.92) !important;
   backdrop-filter: blur(14px) !important;
   -webkit-backdrop-filter: blur(14px) !important;
   border: 1px solid var(--border-subtle) !important;
@@ -648,7 +650,7 @@ body {
   font-size: 0.75rem !important;
   font-family: var(--font-mono) !important;
   line-height: 1.7 !important;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08) !important;
   z-index: 1000 !important;
 }
 
@@ -656,7 +658,7 @@ body {
   display: block;
   font-size: 0.8rem;
   margin-bottom: 0.4rem;
-  color: #ffffff;
+  color: var(--text-primary);
   border-bottom: 1px solid rgba(51, 65, 85, 0.5);
   padding-bottom: 0.25rem;
 }
@@ -708,7 +710,7 @@ body {
   border-radius: var(--radius-full);
   background: rgba(99, 102, 241, 0.15);
   border: 1px solid rgba(99, 102, 241, 0.3);
-  color: #a5b4fc;
+  color: #4f46e5;
 }
 
 .ranking-toolbar {
@@ -740,7 +742,7 @@ body {
 
 .scope-btn.active {
   background: var(--accent-cyan);
-  color: #090d16;
+  color: #ffffff;
   font-weight: 700;
 }
 
@@ -785,7 +787,7 @@ table {
 thead {
   position: sticky;
   top: 0;
-  background: #172033;
+  background: rgba(240, 249, 255, 0.95);
   z-index: 10;
 }
 
@@ -822,22 +824,22 @@ tbody tr.selected-row {
 }
 
 tbody tr.selected-row td {
-  color: #ffffff;
+  color: #0f172a;
   font-weight: 600;
 }
 
 .rank-gold {
-  color: #fbbf24 !important;
+  color: #d97706 !important;
   font-weight: 700;
 }
 
 .rank-silver {
-  color: #e2e8f0 !important;
+  color: #475569 !important;
   font-weight: 700;
 }
 
 .rank-bronze {
-  color: #fb923c !important;
+  color: #ea580c !important;
   font-weight: 700;
 }
 
@@ -861,13 +863,13 @@ tbody tr.selected-row td {
 
 .badge.present {
   background: rgba(16, 185, 129, 0.15);
-  color: #34d399;
+  color: #059669;
   border: 1px solid rgba(16, 185, 129, 0.3);
 }
 
 .badge.missing {
   background: rgba(244, 63, 94, 0.15);
-  color: #fb7185;
+  color: #e11d48;
   border: 1px solid rgba(244, 63, 94, 0.3);
 }
 

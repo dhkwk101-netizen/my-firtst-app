@@ -56,7 +56,7 @@ DATABASES = {
         "USER": os.environ.get("PGUSER", "postgres"),
         "PASSWORD": os.environ.get("PGPASSWORD", ""),
         "HOST": os.environ.get("PGHOST", "localhost"),
-        "PORT": os.environ.get("PGPORT", "5433"),
+        "PORT": os.environ.get("PGPORT", "5432"),
     }
 }
 
