@@ -1327,152 +1327,240 @@
   <div id="race-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md hidden">
     <div class="relative w-full max-w-5xl bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl flex flex-col max-h-[92vh] overflow-hidden text-slate-100">
       
-      <!-- Modal Header -->
-      <div class="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-900/90">
-        <div class="flex items-center gap-3">
-          <span class="p-2 rounded-xl bg-gradient-to-tr from-rose-500 to-amber-500 text-white shadow-lg flex items-center justify-center">
-            <span class="material-symbols-outlined text-xl">movie</span>
-          </span>
-          <div>
-            <h2 class="text-lg font-bold text-white flex items-center gap-2">
-              <span>바 차트 레이스 (순위 변천사) 쇼츠 제작기</span>
-              <span class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30">Shorts / Reels Ready</span>
-            </h2>
-            <p class="text-xs text-slate-400">{{ min_year }}년부터 {{ max_year }}년까지 지자체 순위 역전 레이스를 고화질 영상으로 녹화·다운로드합니다.</p>
+      <!-- Modal Header with 3 Content Creation Mode Tabs -->
+      <div class="flex flex-col border-b border-slate-800 bg-slate-900/95">
+        <div class="flex items-center justify-between px-6 pt-4 pb-3">
+          <div class="flex items-center gap-3">
+            <span class="p-2 rounded-xl bg-gradient-to-tr from-rose-500 via-pink-600 to-amber-500 text-white shadow-lg flex items-center justify-center">
+              <span class="material-symbols-outlined text-xl">auto_videocam</span>
+            </span>
+            <div>
+              <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                <span>지자체 데이터 미디어 팩토리</span>
+                <span class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30">Shorts &amp; Infographic 3-in-1</span>
+              </h2>
+              <p class="text-xs text-slate-400">순위 변천사 레이스, 1vs1 라이벌 배틀, 1장 카드뉴스까지 고화질로 원클릭 자동 제작합니다.</p>
+            </div>
           </div>
+          <button type="button" id="btn-close-race-modal" class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors">
+            <span class="material-symbols-outlined text-2xl">close</span>
+          </button>
         </div>
-        <button type="button" id="btn-close-race-modal" class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors">
-          <span class="material-symbols-outlined text-2xl">close</span>
-        </button>
+
+        <!-- Mode Switcher Tabs -->
+        <div class="flex items-center gap-2 px-6 pb-2.5 text-xs font-semibold">
+          <button type="button" id="tab-mode-race" class="media-tab-btn px-3.5 py-1.5 rounded-lg bg-sky-500/20 text-sky-300 border border-sky-500/40 flex items-center gap-1.5 transition-all shadow-sm">
+            <span class="material-symbols-outlined text-sm">leaderboard</span>
+            <span>1. 순위 변천사 레이스</span>
+          </button>
+          <button type="button" id="tab-mode-versus" class="media-tab-btn px-3.5 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-700/60 flex items-center gap-1.5 transition-all">
+            <span class="material-symbols-outlined text-sm">swords</span>
+            <span>2. 1 vs 1 라이벌 배틀</span>
+          </button>
+          <button type="button" id="tab-mode-card" class="media-tab-btn px-3.5 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-700/60 flex items-center gap-1.5 transition-all">
+            <span class="material-symbols-outlined text-sm">badge</span>
+            <span>3. 1장 성적표 카드뉴스</span>
+          </button>
+        </div>
       </div>
 
-      <!-- Modal Body (Control Bar + Canvas Stage) -->
-      <div class="flex flex-col flex-1 overflow-hidden p-6 gap-4 bg-slate-950/60">
+      <!-- Modal Body (Control Panels + Canvas Stage) -->
+      <div class="flex flex-col flex-1 overflow-hidden p-6 gap-3.5 bg-slate-950/60">
         
-        <!-- Setting Controls Bar -->
-        <div class="grid grid-cols-2 sm:grid-cols-5 gap-2.5 p-3 bg-slate-900/90 rounded-xl border border-slate-800 text-xs">
-          <div>
-            <label class="block font-semibold text-slate-400 mb-1">시각화 지표</label>
-            <select id="race-indicator-select" class="w-full bg-slate-800 border border-slate-700 text-white rounded-lg py-1.5 px-2 focus:ring-1 focus:ring-sky-400">
-              <optgroup label="✨ 1인당 소득 &amp; 재정 지표 (추천)">
-                <option value="AVERAGE_WAGE">주민 1인당 평균 연봉 (원)</option>
-                <option value="ACQUISITION_TAX_PER_CAPITA">1인당 취득세 (원/인)</option>
-                <option value="LOCAL_TAX_TOTAL_PER_CAPITA">1인당 지방세 총액 (원/인)</option>
-                <option value="LOCAL_INCOME_TAX_PER_CAPITA">1인당 지방소득세 (원/인)</option>
-                <option value="PROPERTY_TAX_PER_CAPITA">1인당 재산세 (원/인)</option>
-                <option value="BUSINESSES_PER_THOUSAND">인구 천명당 사업체 수 (개)</option>
-              </optgroup>
-              <optgroup label="🏛️ 지방세 &amp; 기업 일자리">
-                <option value="CORPORATE_TOTAL_PAYROLL">사업장 총급여액 (원)</option>
-                <option value="WITHHOLDING_TAX">원천징수세액 (원)</option>
-                <option value="ACQUISITION_TAX" selected>취득세 세입액 (원)</option>
-                <option value="LOCAL_TAX_TOTAL">지방세 총 세입액 (원)</option>
-                <option value="LOCAL_INCOME_TAX">지방소득세 세입액 (원)</option>
-                <option value="PROPERTY_TAX">재산세 세입액 (원)</option>
-                <option value="FISCAL_INDEPENDENCE">재정자립도 (%)</option>
-              </optgroup>
-              <optgroup label="👥 인구 및 지역 경제">
-                <option value="POPULATION">주민등록인구 (명)</option>
-                <option value="BUSINESS_ESTABLISHMENTS">가동 사업체 수 (개)</option>
-                <option value="ELDERLY_POPULATION_RATIO">고령인구 비율 (%)</option>
-                <option value="TOTAL_FERTILITY_RATE">합계출산율 (명)</option>
-              </optgroup>
-            </select>
+        <!-- [PANEL 1] 순위 변천사 레이스 컨트롤러 -->
+        <div id="panel-mode-race" class="flex flex-col gap-2.5">
+          <!-- Setting Controls Bar -->
+          <div class="grid grid-cols-2 sm:grid-cols-6 gap-2 p-3 bg-slate-900/90 rounded-xl border border-slate-800 text-xs">
+            <div>
+              <label class="block font-semibold text-slate-400 mb-1">시각화 지표</label>
+              <select id="race-indicator-select" class="w-full bg-slate-800 border border-slate-700 text-white rounded-lg py-1.5 px-2 focus:ring-1 focus:ring-sky-400">
+                <optgroup label="✨ 1인당 소득 &amp; 재정 지표 (추천)">
+                  <option value="AVERAGE_WAGE">주민 1인당 평균 연봉 (원)</option>
+                  <option value="ACQUISITION_TAX_PER_CAPITA">1인당 취득세 (원/인)</option>
+                  <option value="LOCAL_TAX_TOTAL_PER_CAPITA">1인당 지방세 총액 (원/인)</option>
+                  <option value="LOCAL_INCOME_TAX_PER_CAPITA">1인당 지방소득세 (원/인)</option>
+                  <option value="PROPERTY_TAX_PER_CAPITA">1인당 재산세 (원/인)</option>
+                  <option value="BUSINESSES_PER_THOUSAND">인구 천명당 사업체 수 (개)</option>
+                </optgroup>
+                <optgroup label="🏛️ 지방세 &amp; 기업 일자리">
+                  <option value="CORPORATE_TOTAL_PAYROLL">사업장 총급여액 (원)</option>
+                  <option value="WITHHOLDING_TAX">원천징수세액 (원)</option>
+                  <option value="ACQUISITION_TAX" selected>취득세 세입액 (원)</option>
+                  <option value="LOCAL_TAX_TOTAL">지방세 총 세입액 (원)</option>
+                  <option value="LOCAL_INCOME_TAX">지방소득세 세입액 (원)</option>
+                  <option value="PROPERTY_TAX">재산세 세입액 (원)</option>
+                  <option value="FISCAL_INDEPENDENCE">재정자립도 (%)</option>
+                </optgroup>
+                <optgroup label="👥 인구 및 지역 경제">
+                  <option value="POPULATION">주민등록인구 (명)</option>
+                  <option value="BUSINESS_ESTABLISHMENTS">가동 사업체 수 (개)</option>
+                  <option value="ELDERLY_POPULATION_RATIO">고령인구 비율 (%)</option>
+                  <option value="TOTAL_FERTILITY_RATE">합계출산율 (명)</option>
+                </optgroup>
+              </select>
+            </div>
+
+            <div>
+              <label class="block font-semibold text-emerald-400 mb-1 flex items-center gap-1">
+                <span class="material-symbols-outlined text-[13px]">tune</span>
+                <span>랭킹 방식</span>
+              </label>
+              <select id="race-ranking-mode" class="w-full bg-slate-800 border border-slate-700 text-white rounded-lg py-1.5 px-2 focus:ring-1 focus:ring-emerald-400 font-medium">
+                <option value="VALUE" selected>📊 절대값 순위</option>
+                <option value="GROWTH_RATE">🚀 15개년 성장률(%) 순위</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block font-semibold text-sky-400 mb-1 flex items-center gap-1">
+                <span class="material-symbols-outlined text-[13px]">location_on</span>
+                <span>대상 지역 범위</span>
+              </label>
+              <select id="race-province-select" class="w-full bg-slate-800 border border-slate-700 text-white rounded-lg py-1.5 px-2 focus:ring-1 focus:ring-sky-400 font-medium">
+                <option value="" selected>전국 전체 (230개 자치단체)</option>
+                <option value="SUDOGWON">수도권 (서울·경기·인천)</option>
+                <option value="KR_11">서울특별시 (25개 구)</option>
+                <option value="KR_41">경기도 (31개 시·군)</option>
+                <option value="KR_26">부산광역시 (16개 구·군)</option>
+                <option value="KR_27">대구광역시 (8개 구·군)</option>
+                <option value="KR_28">인천광역시 (10개 구·군)</option>
+                <option value="KR_29">광주광역시 (5개 구)</option>
+                <option value="KR_30">대전광역시 (5개 구)</option>
+                <option value="KR_31">울산광역시 (5개 구·군)</option>
+                <option value="KR_36">세종특별자치시</option>
+                <option value="KR_51">강원특별자치도 (18개 시·군)</option>
+                <option value="KR_43">충청북도 (11개 시·군)</option>
+                <option value="KR_44">충청남도 (15개 시·군)</option>
+                <option value="KR_52">전북특별자치도 (14개 시·군)</option>
+                <option value="KR_46">전라남도 (22개 시·군)</option>
+                <option value="KR_47">경상북도 (23개 시·군)</option>
+                <option value="KR_48">경상남도 (18개 시·군)</option>
+                <option value="KR_50">제주특별자치도 (2개 시)</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block font-semibold text-slate-400 mb-1">영상 비율</label>
+              <select id="race-aspect-select" class="w-full bg-slate-800 border border-slate-700 text-white rounded-lg py-1.5 px-2 focus:ring-1 focus:ring-rose-400">
+                <option value="9:16" selected>📱 9:16 세로형 (쇼츠/릴스)</option>
+                <option value="16:9">🖥️ 16:9 가로형 (일반 영상)</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block font-semibold text-slate-400 mb-1">노출 순위</label>
+              <select id="race-topn-select" class="w-full bg-slate-800 border border-slate-700 text-white rounded-lg py-1.5 px-2 focus:ring-1 focus:ring-sky-400">
+                <option value="10" selected>TOP 10</option>
+                <option value="20">TOP 20</option>
+                <option value="50">TOP 50</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block font-semibold text-slate-400 mb-1">전환 속도</label>
+              <select id="race-speed-select" class="w-full bg-slate-800 border border-slate-700 text-white rounded-lg py-1.5 px-2 focus:ring-1 focus:ring-sky-400">
+                <option value="2500">느림 (2.5초/년)</option>
+                <option value="1800" selected>보통 (1.8초/년)</option>
+                <option value="1200">빠름 (1.2초/년)</option>
+              </select>
+            </div>
           </div>
 
-          <div>
-            <label class="block font-semibold text-sky-400 mb-1 flex items-center gap-1">
-              <span class="material-symbols-outlined text-[13px]">location_on</span>
-              <span>대상 지역 범위</span>
-            </label>
-            <select id="race-province-select" class="w-full bg-slate-800 border border-slate-700 text-white rounded-lg py-1.5 px-2 focus:ring-1 focus:ring-sky-400 font-medium">
-              <option value="" selected>전국 전체 (230개 자치단체)</option>
-              <option value="SUDOGWON">수도권 (서울·경기·인천)</option>
-              <option value="KR_11">서울특별시 (25개 구)</option>
-              <option value="KR_41">경기도 (31개 시·군)</option>
-              <option value="KR_26">부산광역시 (16개 구·군)</option>
-              <option value="KR_27">대구광역시 (8개 구·군)</option>
-              <option value="KR_28">인천광역시 (10개 구·군)</option>
-              <option value="KR_29">광주광역시 (5개 구)</option>
-              <option value="KR_30">대전광역시 (5개 구)</option>
-              <option value="KR_31">울산광역시 (5개 구·군)</option>
-              <option value="KR_36">세종특별자치시</option>
-              <option value="KR_51">강원특별자치도 (18개 시·군)</option>
-              <option value="KR_43">충청북도 (11개 시·군)</option>
-              <option value="KR_44">충청남도 (15개 시·군)</option>
-              <option value="KR_52">전북특별자치도 (14개 시·군)</option>
-              <option value="KR_46">전라남도 (22개 시·군)</option>
-              <option value="KR_47">경상북도 (23개 시·군)</option>
-              <option value="KR_48">경상남도 (18개 시·군)</option>
-              <option value="KR_50">제주특별자치도 (2개 시)</option>
-            </select>
-          </div>
-
-          <div>
-            <label class="block font-semibold text-slate-400 mb-1">영상 비율 (플랫폼)</label>
-            <select id="race-aspect-select" class="w-full bg-slate-800 border border-slate-700 text-white rounded-lg py-1.5 px-2 focus:ring-1 focus:ring-rose-400">
-              <option value="9:16" selected>📱 9:16 세로형 (쇼츠/릴스)</option>
-              <option value="16:9">🖥️ 16:9 가로형 (일반 영상)</option>
-            </select>
-          </div>
-
-          <div>
-            <label class="block font-semibold text-slate-400 mb-1">노출 순위 범위</label>
-            <select id="race-topn-select" class="w-full bg-slate-800 border border-slate-700 text-white rounded-lg py-1.5 px-2 focus:ring-1 focus:ring-sky-400">
-              <option value="10" selected>TOP 10 지자체</option>
-              <option value="20">TOP 20 지자체</option>
-              <option value="50">TOP 50 지자체</option>
-            </select>
-          </div>
-
-          <div>
-            <label class="block font-semibold text-slate-400 mb-1">연도 전환 속도</label>
-            <select id="race-speed-select" class="w-full bg-slate-800 border border-slate-700 text-white rounded-lg py-1.5 px-2 focus:ring-1 focus:ring-sky-400">
-              <option value="2500">느림 (2.5초/년, 총 35초)</option>
-              <option value="1800" selected>보통 (1.8초/년, 총 25초)</option>
-              <option value="1200">빠름 (1.2초/년, 총 17초)</option>
-            </select>
+          <!-- Custom Video Title / Subtitle & BGM Audio Controls -->
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-2.5 p-3 bg-slate-900/90 rounded-xl border border-slate-800 text-xs">
+            <div>
+              <label class="block font-semibold text-sky-400 mb-1 flex items-center gap-1">
+                <span class="material-symbols-outlined text-xs">edit_note</span>
+                <span>상단 메인 헤드라인</span>
+              </label>
+              <input type="text" id="race-custom-title" value="전국 지자체 {{ total_years }}개년" placeholder="예: 전국 지자체 {{ total_years }}개년" class="w-full bg-slate-800 border border-slate-700 text-white rounded-lg py-1.5 px-2.5 focus:ring-1 focus:ring-sky-400 placeholder:text-slate-500 font-medium">
+            </div>
+            <div>
+              <label class="block font-semibold text-cyan-400 mb-1 flex items-center gap-1">
+                <span class="material-symbols-outlined text-xs">subtitles</span>
+                <span>상단 서브타이틀</span>
+              </label>
+              <input type="text" id="race-custom-subtitle" value="" placeholder="자동 생성 (예: 취득세 TOP 10)" class="w-full bg-slate-800 border border-slate-700 text-white rounded-lg py-1.5 px-2.5 focus:ring-1 focus:ring-sky-400 placeholder:text-slate-500 font-medium">
+            </div>
+            <!-- BGM 음악 파일 선택 및 볼륨 -->
+            <div class="flex flex-col justify-between">
+              <label class="block font-semibold text-amber-400 mb-1 flex items-center justify-between">
+                <span class="flex items-center gap-1">
+                  <span class="material-symbols-outlined text-xs">music_note</span>
+                  <span>배경음악 (내 PC 음원 합성)</span>
+                </span>
+                <span id="race-bgm-volume-text" class="text-[10px] text-slate-400 font-mono">볼륨 60%</span>
+              </label>
+              <div class="flex items-center gap-2">
+                <input type="file" id="race-bgm-file" accept="audio/*" class="hidden">
+                <button type="button" id="btn-select-bgm" class="px-2.5 py-1.5 rounded-lg bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 border border-amber-500/40 font-semibold text-[11px] transition-colors flex items-center gap-1 shrink-0">
+                  <span class="material-symbols-outlined text-xs">upload_file</span>
+                  <span>음원 선택</span>
+                </button>
+                <div class="flex-1 flex items-center gap-1 min-w-0 bg-slate-800/80 rounded-lg px-2 py-1 border border-slate-700/80">
+                  <span id="race-bgm-filename" class="text-[11px] text-slate-400 truncate select-none">선택 안 됨 (무음)</span>
+                  <button type="button" id="btn-remove-bgm" class="text-slate-400 hover:text-rose-400 transition-colors hidden shrink-0" title="음악 제거">
+                    <span class="material-symbols-outlined text-xs">cancel</span>
+                  </button>
+                </div>
+                <input type="range" id="race-bgm-volume" min="0" max="100" value="60" class="w-14 accent-amber-400 cursor-pointer" title="음악 볼륨">
+              </div>
+            </div>
           </div>
         </div>
 
-        <!-- Custom Video Title / Subtitle & BGM Audio Controls -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-3 p-3 bg-slate-900/90 rounded-xl border border-slate-800 text-xs">
-          <div>
-            <label class="block font-semibold text-sky-400 mb-1 flex items-center gap-1">
-              <span class="material-symbols-outlined text-xs">edit_note</span>
-              <span>상단 메인 헤드라인 (직접 수정 가능)</span>
-            </label>
-            <input type="text" id="race-custom-title" value="전국 지자체 {{ total_years }}개년" placeholder="예: 전국 지자체 {{ total_years }}개년, {{ min_year }}-{{ max_year }} 순위 등" class="w-full bg-slate-800 border border-slate-700 text-white rounded-lg py-1.5 px-2.5 focus:ring-1 focus:ring-sky-400 placeholder:text-slate-500 font-medium">
+        <!-- [PANEL 2] 1 vs 1 라이벌 배틀 컨트롤러 -->
+        <div id="panel-mode-versus" class="flex flex-col gap-2.5 hidden">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 p-3.5 bg-slate-900/90 rounded-xl border border-slate-800 text-xs">
+            <div class="flex flex-col gap-1.5">
+              <label class="font-bold text-rose-400 flex items-center gap-1">
+                <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+                <span>도전자 A 지자체 (RED 코너)</span>
+              </label>
+              <select id="versus-select-a" class="w-full bg-slate-800 border border-rose-500/50 text-white font-bold rounded-lg py-1.5 px-2.5 focus:ring-2 focus:ring-rose-500">
+                <!-- Javascript populated -->
+              </select>
+            </div>
+            <div class="flex flex-col gap-1.5">
+              <label class="font-bold text-sky-400 flex items-center gap-1">
+                <span class="w-2.5 h-2.5 rounded-full bg-sky-500"></span>
+                <span>도전자 B 지자체 (BLUE 코너)</span>
+              </label>
+              <select id="versus-select-b" class="w-full bg-slate-800 border border-sky-500/50 text-white font-bold rounded-lg py-1.5 px-2.5 focus:ring-2 focus:ring-sky-500">
+                <!-- Javascript populated -->
+              </select>
+            </div>
           </div>
-          <div>
-            <label class="block font-semibold text-cyan-400 mb-1 flex items-center gap-1">
-              <span class="material-symbols-outlined text-xs">subtitles</span>
-              <span>상단 지표 서브타이틀 (비워두면 자동 생성)</span>
-            </label>
-            <input type="text" id="race-custom-subtitle" value="" placeholder="자동 생성 (예: 1인당 취득세 TOP 10)" class="w-full bg-slate-800 border border-slate-700 text-white rounded-lg py-1.5 px-2.5 focus:ring-1 focus:ring-sky-400 placeholder:text-slate-500 font-medium">
+
+          <!-- 인기 라이벌 프리셋 칩 -->
+          <div class="flex flex-wrap items-center gap-1.5 px-1 text-xs">
+            <span class="text-slate-400 font-semibold flex items-center gap-1 mr-1 text-[11px]">
+              <span class="material-symbols-outlined text-xs text-amber-400">local_fire_department</span>
+              <span>인기 라이벌 매치:</span>
+            </span>
+            <button type="button" class="btn-versus-preset px-2.5 py-1 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-[11px] font-medium transition-all" data-a="KR_41130" data-b="KR_41590">성남(분당) vs 화성(동탄)</button>
+            <button type="button" class="btn-versus-preset px-2.5 py-1 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-[11px] font-medium transition-all" data-a="KR_11680" data-b="KR_11650">서울 강남 vs 서울 서초</button>
+            <button type="button" class="btn-versus-preset px-2.5 py-1 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-[11px] font-medium transition-all" data-a="KR_28185" data-b="KR_28260">인천 송도(연수) vs 청라(서구)</button>
+            <button type="button" class="btn-versus-preset px-2.5 py-1 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-[11px] font-medium transition-all" data-a="KR_41110" data-b="KR_41280">경기 수원 vs 경기 고양</button>
+            <button type="button" class="btn-versus-preset px-2.5 py-1 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-[11px] font-medium transition-all" data-a="KR_26350" data-b="KR_26500">부산 해운대 vs 부산 수영</button>
           </div>
-          <!-- BGM 음악 파일 선택 및 볼륨 -->
-          <div class="flex flex-col justify-between">
-            <label class="block font-semibold text-amber-400 mb-1 flex items-center justify-between">
-              <span class="flex items-center gap-1">
-                <span class="material-symbols-outlined text-xs">music_note</span>
-                <span>배경음악 (내 PC 음악 파일 합성)</span>
-              </span>
-              <span id="race-bgm-volume-text" class="text-[10px] text-slate-400 font-mono">볼륨 60%</span>
-            </label>
-            <div class="flex items-center gap-2">
-              <input type="file" id="race-bgm-file" accept="audio/*" class="hidden">
-              <button type="button" id="btn-select-bgm" class="px-2.5 py-1.5 rounded-lg bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 border border-amber-500/40 font-semibold text-[11px] transition-colors flex items-center gap-1 shrink-0">
-                <span class="material-symbols-outlined text-xs">upload_file</span>
-                <span>음악 파일 선택</span>
-              </button>
-              <div class="flex-1 flex items-center gap-1 min-w-0 bg-slate-800/80 rounded-lg px-2 py-1 border border-slate-700/80">
-                <span id="race-bgm-filename" class="text-[11px] text-slate-400 truncate select-none">선택 안 됨 (무음 녹화)</span>
-                <button type="button" id="btn-remove-bgm" class="text-slate-400 hover:text-rose-400 transition-colors hidden shrink-0" title="음악 제거">
-                  <span class="material-symbols-outlined text-xs">cancel</span>
-                </button>
-              </div>
-              <input type="range" id="race-bgm-volume" min="0" max="100" value="60" class="w-16 accent-amber-400 cursor-pointer" title="음악 볼륨">
+        </div>
+
+        <!-- [PANEL 3] 1장 성적표 카드뉴스 컨트롤러 -->
+        <div id="panel-mode-card" class="flex flex-col gap-2.5 hidden">
+          <div class="flex flex-wrap items-center justify-between gap-3 p-3.5 bg-slate-900/90 rounded-xl border border-slate-800 text-xs">
+            <div class="flex items-center gap-3 flex-1 min-w-[260px]">
+              <label class="font-bold text-emerald-400 whitespace-nowrap flex items-center gap-1">
+                <span class="material-symbols-outlined text-sm">assignment_ind</span>
+                <span>성적표 대상 지자체</span>
+              </label>
+              <select id="card-select-region" class="w-full max-w-sm bg-slate-800 border border-slate-700 text-white font-bold rounded-lg py-1.5 px-2.5 focus:ring-2 focus:ring-emerald-500">
+                <!-- Javascript populated -->
+              </select>
+            </div>
+            <div class="text-[11px] text-slate-400 flex items-center gap-2">
+              <span class="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 font-mono">1080 × 1080 (1:1)</span>
+              <span>인스타그램 피드 / 맘카페 / 블로그 공유 최적화</span>
             </div>
           </div>
         </div>
@@ -1501,18 +1589,18 @@
       <div class="flex flex-wrap items-center justify-between px-6 py-3.5 border-t border-slate-800 bg-slate-900 gap-3">
         <!-- Quick Export Tools (Thumbnail & Tags) -->
         <div class="flex items-center gap-2">
-          <button type="button" id="btn-race-thumbnail" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white font-medium text-xs transition-colors flex items-center gap-1.5 border border-slate-700 shadow-sm" title="현재 화면을 고화질 PNG 썸네일로 즉시 저장">
+          <button type="button" id="btn-race-thumbnail" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white font-medium text-xs transition-colors flex items-center gap-1.5 border border-slate-700 shadow-sm" title="현재 화면을 고화질 PNG로 즉시 저장">
             <span class="material-symbols-outlined text-sm text-sky-400">photo_camera</span>
-            <span>썸네일(PNG) 저장</span>
+            <span id="label-btn-thumbnail">썸네일(PNG) 저장</span>
           </button>
-          <button type="button" id="btn-race-copy-tags" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white font-medium text-xs transition-colors flex items-center gap-1.5 border border-slate-700 shadow-sm" title="유튜브 쇼츠 업로드용 제목/설명/해시태그 클립보드 복사">
+          <button type="button" id="btn-race-copy-tags" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white font-medium text-xs transition-colors flex items-center gap-1.5 border border-slate-700 shadow-sm" title="유튜브 쇼츠/인스타 업로드용 텍스트 클립보드 복사">
             <span class="material-symbols-outlined text-sm text-emerald-400">content_copy</span>
-            <span>쇼츠 텍스트 복사</span>
+            <span>쇼츠/SNS 텍스트 복사</span>
           </button>
         </div>
 
-        <!-- Play & Record Controls -->
-        <div class="flex items-center gap-3">
+        <!-- Play & Record Controls (For Race and Versus) -->
+        <div id="controls-video-actions" class="flex items-center gap-3">
           <button type="button" id="btn-race-play" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs transition-colors flex items-center gap-1.5 border border-slate-700">
             <span class="material-symbols-outlined text-sm">play_arrow</span>
             <span>미리보기 재생</span>
@@ -1520,6 +1608,14 @@
           <button type="button" id="btn-race-record" class="px-5 py-2 rounded-xl bg-gradient-to-r from-rose-500 via-pink-600 to-red-600 hover:brightness-110 active:scale-[0.98] text-white font-bold text-xs transition-all shadow-lg shadow-rose-900/40 flex items-center gap-1.5">
             <span class="material-symbols-outlined text-sm">videocam</span>
             <span>쇼츠 영상 녹화 &amp; 다운로드</span>
+          </button>
+        </div>
+
+        <!-- Card Only Action (For Card News mode) -->
+        <div id="controls-card-actions" class="flex items-center gap-3 hidden">
+          <button type="button" id="btn-download-card-png" class="px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:brightness-110 active:scale-[0.98] text-white font-bold text-xs transition-all shadow-lg shadow-emerald-900/40 flex items-center gap-1.5">
+            <span class="material-symbols-outlined text-sm">download</span>
+            <span>1장 성적표 카드뉴스(PNG) 다운로드</span>
           </button>
         </div>
       </div>

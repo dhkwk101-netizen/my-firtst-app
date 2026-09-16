@@ -8,6 +8,8 @@ from explorer.queries import (
     query_regions,
     query_regional_dashboard,
     query_series,
+    query_versus_data,
+    query_region_report_card,
 )
 
 def _get_year_bounds(indicator_id: str | None = None):
@@ -111,6 +113,7 @@ def api_race_data(request: HttpRequest) -> JsonResponse:
     start_year = int(request.GET.get("startYear") or min_year)
     end_year = int(request.GET.get("endYear") or max_year)
     province_code = request.GET.get("provinceCode", "").strip() or None
+    ranking_mode = request.GET.get("rankingMode", "VALUE").strip() or "VALUE"
 
     data = query_race_data(
         indicator_key=indicator_id,
@@ -118,7 +121,37 @@ def api_race_data(request: HttpRequest) -> JsonResponse:
         end_year=end_year,
         top_n=top_n,
         province_code=province_code,
+        ranking_mode=ranking_mode,
     )
+    return JsonResponse(data)
+
+
+def api_versus_data(request: HttpRequest) -> JsonResponse:
+    region_a = request.GET.get("regionA", "KR_41590") # Default: 화성시
+    region_b = request.GET.get("regionB", "KR_41130") # Default: 성남시
+    year_str = request.GET.get("year", "2024")
+    try:
+        baseline_year = int(year_str)
+    except ValueError:
+        baseline_year = 2024
+
+    data = query_versus_data(region_key_a=region_a, region_key_b=region_b, baseline_year=baseline_year)
+    if "error" in data:
+        return JsonResponse(data, status=400)
+    return JsonResponse(data)
+
+
+def api_report_card(request: HttpRequest) -> JsonResponse:
+    region_id = request.GET.get("regionId", "KR_41590") # Default: 화성시
+    year_str = request.GET.get("year", "2024")
+    try:
+        baseline_year = int(year_str)
+    except ValueError:
+        baseline_year = 2024
+
+    data = query_region_report_card(region_key=region_id, baseline_year=baseline_year)
+    if "error" in data:
+        return JsonResponse(data, status=404)
     return JsonResponse(data)
 
 

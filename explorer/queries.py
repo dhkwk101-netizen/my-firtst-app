@@ -286,8 +286,11 @@ def query_race_data(
     end_year: int = 2024,
     top_n: int = 15,
     province_code: str | None = None,
+    ranking_mode: str = "VALUE",
 ) -> dict[str, Any]:
-    """Retrieve multi-year chronological top ranking data formatted for Bar Chart Race animations."""
+    """Retrieve multi-year chronological top ranking data formatted for Bar Chart Race animations.
+    ranking_mode can be 'VALUE' (absolute indicator values) or 'GROWTH_RATE' (percentage growth since start_year).
+    """
     ind_obj = Indicator.objects.filter(indicator_key=indicator_key).select_related("canonical_unit").first()
     region_names: dict[int, str] = {
         rn.region_id: rn.name for rn in RegionName.objects.filter(is_official=True)
@@ -320,6 +323,9 @@ def query_race_data(
     for y in range(start_year, end_year + 1):
         years_data[y] = []
 
+    # Map to store baseline year value per region for GROWTH_RATE mode
+    base_values: dict[str, float] = {}
+
     for row in obs_qs:
         y = row["period__period_start__year"]
         val = float(row["numeric_value"]) if row["numeric_value"] is not None else None
@@ -333,20 +339,49 @@ def query_race_data(
         prov_name = prov["name"] if prov else ""
         short_prov = prov["short"] if prov else ""
 
+        # Track first available baseline value for this region
+        if reg_key not in base_values:
+            base_values[reg_key] = val
+
         years_data[y].append({
             "regionKey": reg_key,
             "regionName": reg_name,
             "provinceName": prov_name,
             "shortProvinceName": short_prov,
-            "value": val,
+            "rawValue": val,
         })
 
-    # For each year, sort descending, assign ranks, and slice to top_n
+    # For each year, compute ranking value (absolute or growth rate)
     race_frames = []
     for y in range(start_year, end_year + 1):
-        raw_list = sorted(years_data.get(y, []), key=lambda x: x["value"], reverse=True)
+        raw_list = years_data.get(y, [])
+        scored_list = []
+
+        for item in raw_list:
+            k = item["regionKey"]
+            raw_v = item["rawValue"]
+            if ranking_mode == "GROWTH_RATE":
+                base_v = base_values.get(k)
+                if not base_v or base_v <= 0:
+                    continue
+                # Calculate percentage growth since baseline year
+                growth = ((raw_v - base_v) / base_v) * 100.0
+                calc_val = round(growth, 2)
+            else:
+                calc_val = raw_v
+
+            scored_list.append({
+                "regionKey": k,
+                "regionName": item["regionName"],
+                "provinceName": item["provinceName"],
+                "shortProvinceName": item["shortProvinceName"],
+                "value": calc_val,
+                "rawValue": raw_v,
+            })
+
+        sorted_list = sorted(scored_list, key=lambda x: x["value"], reverse=True)
         top_list = []
-        for rank, item in enumerate(raw_list[:top_n], start=1):
+        for rank, item in enumerate(sorted_list[:top_n], start=1):
             top_list.append({
                 "rank": rank,
                 "regionKey": item["regionKey"],
@@ -354,7 +389,9 @@ def query_race_data(
                 "fullName": f"{item['shortProvinceName']} {item['regionName']}".strip(),
                 "province": item["provinceName"],
                 "value": item["value"],
+                "rawValue": item["rawValue"],
             })
+
         race_frames.append({
             "year": y,
             "items": top_list,
@@ -378,9 +415,10 @@ def query_race_data(
     return {
         "indicatorKey": indicator_key,
         "indicatorName": ind_obj.name if ind_obj else indicator_key,
-        "unit": ind_obj.canonical_unit.name if ind_obj and ind_obj.canonical_unit else "",
-        "unitSymbol": ind_obj.canonical_unit.symbol if ind_obj and ind_obj.canonical_unit else "",
-        "valueType": ind_obj.value_type if ind_obj else "",
+        "rankingMode": ranking_mode,
+        "unit": "%" if ranking_mode == "GROWTH_RATE" else (ind_obj.canonical_unit.name if ind_obj and ind_obj.canonical_unit else ""),
+        "unitSymbol": "%" if ranking_mode == "GROWTH_RATE" else (ind_obj.canonical_unit.symbol if ind_obj and ind_obj.canonical_unit else ""),
+        "valueType": "PERCENT" if ranking_mode == "GROWTH_RATE" else (ind_obj.value_type if ind_obj else ""),
         "startYear": actual_start_year,
         "endYear": actual_end_year,
         "topN": top_n,
@@ -388,6 +426,320 @@ def query_race_data(
         "provinceName": display_prov_name,
         "shortProvinceName": display_prov_short,
         "frames": race_frames,
+    }
+
+
+def query_versus_data(
+    region_key_a: str,
+    region_key_b: str,
+    baseline_year: int = 2024,
+) -> dict[str, Any]:
+    """Retrieve 5-round comparative clash battle data between two regions for Versus Shorts."""
+    reg_a = Region.objects.filter(region_key=region_key_a).first()
+    reg_b = Region.objects.filter(region_key=region_key_b).first()
+    if not reg_a or not reg_b:
+        return {"error": "One or both regions not found"}
+
+    def get_reg_meta(reg):
+        name_obj = reg.names.filter(is_official=True).first() or reg.names.first()
+        r_name = name_obj.name if name_obj else reg.region_key
+        prefix = reg.region_key[:5]
+        prov = PROVINCE_MAP.get(prefix)
+        prov_name = prov["name"] if prov else ""
+        short_prov = prov["short"] if prov else ""
+        return {
+            "key": reg.region_key,
+            "name": r_name,
+            "fullName": f"{short_prov} {r_name}".strip(),
+            "province": prov_name,
+            "shortProvince": short_prov,
+        }
+
+    info_a = get_reg_meta(reg_a)
+    info_b = get_reg_meta(reg_b)
+
+    # Helper to get latest observation value for an indicator
+    def get_latest_obs(reg, ind_key):
+        obs = (
+            Observation.objects.filter(
+                region=reg,
+                status="PUBLISHED",
+                superseded_at__isnull=True,
+                indicator__indicator_key=ind_key,
+            )
+            .exclude(numeric_value__isnull=True)
+            .order_by("-period__period_start__year")
+            .first()
+        )
+        return (float(obs.numeric_value), obs.period.period_start.year) if obs else (None, None)
+
+    # Helper to calculate 15-year population growth (2010 vs 2024)
+    def get_pop_growth_15y(reg):
+        p10 = Observation.objects.filter(region=reg, status="PUBLISHED", superseded_at__isnull=True, indicator__indicator_key="POPULATION", period__period_start__year=2010).first()
+        p24 = Observation.objects.filter(region=reg, status="PUBLISHED", superseded_at__isnull=True, indicator__indicator_key="POPULATION", period__period_start__year=2024).first()
+        if p10 and p24 and p10.numeric_value and p24.numeric_value and float(p10.numeric_value) > 0:
+            v10 = float(p10.numeric_value)
+            v24 = float(p24.numeric_value)
+            growth = ((v24 - v10) / v10) * 100.0
+            return round(growth, 1), v10, v24
+        return (0.0, 0.0, 0.0)
+
+    # 5 Rounds Definition
+    # Round 1: 소득 대결 (1인당 평균연봉)
+    wage_a, wage_year = get_latest_obs(reg_a, "AVERAGE_WAGE")
+    wage_b, _ = get_latest_obs(reg_b, "AVERAGE_WAGE")
+
+    # Round 2: 일자리 규모 (기업 총급여액)
+    corp_a, corp_year = get_latest_obs(reg_a, "CORPORATE_TOTAL_PAYROLL")
+    corp_b, _ = get_latest_obs(reg_b, "CORPORATE_TOTAL_PAYROLL")
+
+    # Round 3: 부동산 부촌 지수 (1인당 재산세)
+    prop_a, prop_year = get_latest_obs(reg_a, "PROPERTY_TAX_PER_CAPITA")
+    prop_b, _ = get_latest_obs(reg_b, "PROPERTY_TAX_PER_CAPITA")
+
+    # Round 4: 15년간 인구 폭풍 성장률 (%)
+    pop_g_a, _, _ = get_pop_growth_15y(reg_a)
+    pop_g_b, _, _ = get_pop_growth_15y(reg_b)
+
+    # Round 5: 미래 활력 (합계출산율)
+    fert_a, fert_year = get_latest_obs(reg_a, "TOTAL_FERTILITY_RATE")
+    fert_b, _ = get_latest_obs(reg_b, "TOTAL_FERTILITY_RATE")
+
+    def format_money_man(val):
+        if val is None: return "-"
+        return f"{round(val / 10000):,}만원"
+
+    def format_money_jo(val):
+        if val is None: return "-"
+        if val >= 1e12:
+            return f"{(val / 1e12):.1f}조원"
+        return f"{round(val / 1e8):,}억원"
+
+    rounds_spec = [
+        {
+            "round": 1,
+            "title": "주민 1인당 평균연봉",
+            "category": "소득 대결",
+            "icon": "payments",
+            "year": wage_year or 2023,
+            "valA": wage_a or 0,
+            "valB": wage_b or 0,
+            "strA": format_money_man(wage_a),
+            "strB": format_money_man(wage_b),
+        },
+        {
+            "round": 2,
+            "title": "기업 일자리 총급여액",
+            "category": "일자리 규모",
+            "icon": "apartment",
+            "year": corp_year or 2023,
+            "valA": corp_a or 0,
+            "valB": corp_b or 0,
+            "strA": format_money_jo(corp_a),
+            "strB": format_money_jo(corp_b),
+        },
+        {
+            "round": 3,
+            "title": "1인당 재산세",
+            "category": "부동산 부촌 지수",
+            "icon": "home_work",
+            "year": prop_year or 2024,
+            "valA": prop_a or 0,
+            "valB": prop_b or 0,
+            "strA": format_money_man(prop_a),
+            "strB": format_money_man(prop_b),
+        },
+        {
+            "round": 4,
+            "title": "15개년 인구 증감률",
+            "category": "도시 성장성 (2010-2024)",
+            "icon": "trending_up",
+            "year": "2010-2024",
+            "valA": pop_g_a,
+            "valB": pop_g_b,
+            "strA": f"{pop_g_a:+.1f}%",
+            "strB": f"{pop_g_b:+.1f}%",
+        },
+        {
+            "round": 5,
+            "title": "합계출산율",
+            "category": "미래 인구 활력",
+            "icon": "child_care",
+            "year": fert_year or 2024,
+            "valA": fert_a or 0,
+            "valB": fert_b or 0,
+            "strA": f"{fert_a:.2f}명" if fert_a else "-",
+            "strB": f"{fert_b:.2f}명" if fert_b else "-",
+        },
+    ]
+
+    score_a = 0
+    score_b = 0
+    rounds_result = []
+
+    for r in rounds_spec:
+        vA = r["valA"]
+        vB = r["valB"]
+        if vA > vB:
+            winner = "A"
+            score_a += 1
+            diff_pct = round(((vA - vB) / abs(vB) * 100) if vB != 0 else 100, 1)
+        elif vB > vA:
+            winner = "B"
+            score_b += 1
+            diff_pct = round(((vB - vA) / abs(vA) * 100) if vA != 0 else 100, 1)
+        else:
+            winner = "TIE"
+            diff_pct = 0.0
+
+        rounds_result.append({
+            **r,
+            "winner": winner,
+            "diffPct": diff_pct,
+        })
+
+    overall_winner = "A" if score_a > score_b else ("B" if score_b > score_a else "TIE")
+
+    return {
+        "regionA": info_a,
+        "regionB": info_b,
+        "scoreA": score_a,
+        "scoreB": score_b,
+        "overallWinner": overall_winner,
+        "rounds": rounds_result,
+    }
+
+
+def query_region_report_card(
+    region_key: str,
+    baseline_year: int = 2024,
+) -> dict[str, Any]:
+    """Generate 1-page comprehensive infographic report card metrics with national percentile rankings."""
+    reg = Region.objects.filter(region_key=region_key).first()
+    if not reg:
+        return {"error": "Region not found"}
+
+    name_obj = reg.names.filter(is_official=True).first() or reg.names.first()
+    reg_name = name_obj.name if name_obj else reg.region_key
+    prefix = reg.region_key[:5]
+    prov = PROVINCE_MAP.get(prefix)
+    prov_name = prov["name"] if prov else ""
+    short_prov = prov["short"] if prov else ""
+    full_name = f"{prov_name} {reg_name}".strip()
+
+    # Function to calculate nationwide rank and percentile for a given indicator
+    def get_national_percentile(ind_key, year=baseline_year, reverse=True):
+        qs = Observation.objects.filter(
+            status="PUBLISHED",
+            superseded_at__isnull=True,
+            indicator__indicator_key=ind_key,
+            period__period_start__year=year,
+        ).exclude(numeric_value__isnull=True)
+
+        if not qs.exists() and year != baseline_year:
+            # Fallback to latest year
+            latest_y = Observation.objects.filter(status="PUBLISHED", superseded_at__isnull=True, indicator__indicator_key=ind_key).order_by("-period__period_start__year").first()
+            if latest_y:
+                qs = Observation.objects.filter(status="PUBLISHED", superseded_at__isnull=True, indicator__indicator_key=ind_key, period__period_start__year=latest_y.period.period_start.year).exclude(numeric_value__isnull=True)
+
+        total_count = qs.count()
+        if total_count == 0:
+            return None, None, total_count, 0
+
+        target_obs = qs.filter(region=reg).first()
+        if not target_obs:
+            return None, None, total_count, 0
+
+        target_val = float(target_obs.numeric_value)
+
+        # Order
+        order_str = "-numeric_value" if reverse else "numeric_value"
+        ordered_ids = list(qs.order_by(order_str).values_list("region_id", flat=True))
+        rank = ordered_ids.index(reg.id) + 1 if reg.id in ordered_ids else total_count
+
+        percentile = round((rank / total_count) * 100, 1)
+        return target_val, rank, total_count, percentile
+
+    # 4 Core Dimension Evaluations
+    wage_val, wage_rank, wage_total, wage_pct = get_national_percentile("AVERAGE_WAGE", 2023)
+    corp_val, corp_rank, corp_total, corp_pct = get_national_percentile("CORPORATE_TOTAL_PAYROLL", 2023)
+    prop_val, prop_rank, prop_total, prop_pct = get_national_percentile("PROPERTY_TAX_PER_CAPITA", 2024)
+    fiscal_val, fiscal_rank, fiscal_total, fiscal_pct = get_national_percentile("FISCAL_INDEPENDENCE", 2024)
+    pop_val, pop_rank, pop_total, pop_pct = get_national_percentile("POPULATION", 2024)
+
+    # 15y pop growth
+    p10 = Observation.objects.filter(region=reg, status="PUBLISHED", superseded_at__isnull=True, indicator__indicator_key="POPULATION", period__period_start__year=2010).first()
+    pop_growth = 0.0
+    if p10 and pop_val and float(p10.numeric_value) > 0:
+        pop_growth = round(((pop_val - float(p10.numeric_value)) / float(p10.numeric_value)) * 100, 1)
+
+    # Overall Score Calculation
+    percentiles = [p for p in [wage_pct, corp_pct, prop_pct, fiscal_pct] if p is not None]
+    avg_pct = sum(percentiles) / len(percentiles) if percentiles else 50.0
+
+    if avg_pct <= 5.0:
+        grade = "S"
+        grade_desc = "대한민국 최상위 하이엔드 자치단체"
+    elif avg_pct <= 15.0:
+        grade = "A+"
+        grade_desc = "전국 선도형 특급 자족도시"
+    elif avg_pct <= 30.0:
+        grade = "A"
+        grade_desc = "우수한 생활·경제 인프라 보유 도시"
+    elif avg_pct <= 50.0:
+        grade = "B+"
+        grade_desc = "안정적인 중상위 생활권 도시"
+    elif avg_pct <= 70.0:
+        grade = "B"
+        grade_desc = "보통 수준의 거주 자치단체"
+    else:
+        grade = "C"
+        grade_desc = "재정 및 인구 보강이 필요한 지역"
+
+    return {
+        "regionKey": reg.region_key,
+        "name": reg_name,
+        "fullName": full_name,
+        "province": prov_name,
+        "grade": grade,
+        "gradeDesc": grade_desc,
+        "overallPercentile": round(avg_pct, 1),
+        "population": {
+            "value": int(pop_val) if pop_val else 0,
+            "rank": pop_rank,
+            "total": pop_total,
+            "growth15y": pop_growth,
+        },
+        "metrics": {
+            "wage": {
+                "name": "1인당 평균연봉",
+                "value": wage_val,
+                "formatted": f"{round(wage_val/10000):,}만원" if wage_val else "-",
+                "rank": wage_rank,
+                "percentile": wage_pct,
+            },
+            "corporate": {
+                "name": "기업 일자리 총급여",
+                "value": corp_val,
+                "formatted": f"{(corp_val/1e12):.1f}조원" if corp_val and corp_val >= 1e12 else (f"{round(corp_val/1e8):,}억원" if corp_val else "-"),
+                "rank": corp_rank,
+                "percentile": corp_pct,
+            },
+            "propertyTax": {
+                "name": "1인당 재산세 (부촌지수)",
+                "value": prop_val,
+                "formatted": f"{round(prop_val/10000):,}만원" if prop_val else "-",
+                "rank": prop_rank,
+                "percentile": prop_pct,
+            },
+            "fiscal": {
+                "name": "재정자립도",
+                "value": fiscal_val,
+                "formatted": f"{fiscal_val:.1f}%" if fiscal_val else "-",
+                "rank": fiscal_rank,
+                "percentile": fiscal_pct,
+            }
+        }
     }
 
 
