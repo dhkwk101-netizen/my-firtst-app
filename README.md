@@ -1,158 +1,585 @@
-# 2010–2024 Regional Data Explorer MVP (Korea Local Governments)
+# 대한민국 기초자치단체 지역통계 및 재정·인구 탐색기 (Regional Data Explorer)
 
-A resilient, reproducible, fixture-backed Regional Data Explorer for Korean local governments (시·군·구), integrating local tax revenue (취득세), resident population (주민등록인구), and derived per-capita indicators with historical SGIS administrative boundaries from 2010 to 2024.
+대한민국 전국 17개 시·도 산하 230개 기초자치단체의 15개년(2010–2024) 연속 시계열 데이터와 공간 정보(SGIS 행정경계)를 연계하여 분석·시각화하는 데이터 인텔리전스 플랫폼입니다.
+
+이 문서는 Regional Data Explorer의 제품 목적, 현재 기능, 화면 구조, 데이터 파이프라인, 아키텍처, 운영 규칙과 향후 설계를 설명하는 최상위 기준 문서입니다.
+
+| 항목 | 값 |
+|---|---|
+| 문서 상태 | 유지 관리 중 |
+| 마지막 갱신 | 2026-09-16 |
+| 현재 앱 버전 | MVP 1.0.0 (17개 지표 적재 완료) |
+| Python 버전 | Python 3.12+ (테스트 환경: Python 3.14) |
+| Django 프레임워크 | Django 5.2 LTS |
+| 데이터베이스 | PostgreSQL 16+ (Port 5433, `btree_gist` 활성화) |
+| 프론트엔드 스택 | Vanilla JS, Chart.js 4.5.1, Leaflet 1.9.4, Web Audio API |
+| 기본 시간대 / 통화 | Asia/Seoul / KRW (원) |
 
 ---
 
-## 1. Prerequisites and System Requirements
+## 목차
 
-- **Python**: 3.12+ (tested on Python 3.14)
-- **PostgreSQL**: 16 with `btree_gist` extension enabled
-- **Environment Variables**:
-  - `DATABASE_URL`: PostgreSQL connection URI (e.g. `postgresql://postgres@localhost:5433/kosis`)
-  - `KOSIS_API_KEY`: Official KOSIS OpenAPI key for discovery and live ingestion (keep secure; never commit or leak)
-  - `DJANGO_SECRET_KEY`: Standard Django secret key for session/security protection
-  - `DEBUG`: Set to `True` for development, `False` for production
+1. [문서 안내](#1-문서-안내)
+2. [Regional Data Explorer 개요](#2-regional-data-explorer-개요)
+3. [사용자와 권한](#3-사용자와-권한)
+4. [화면과 사용자 흐름](#4-화면과-사용자-흐름)
+5. [통계 데이터와 지표 체계](#5-통계-데이터와-지표-체계)
+6. [데이터 파이프라인 설계](#6-데이터-파이프라인-설계)
+7. [배치와 스케줄링](#7-배치와-스케줄링)
+8. [데이터베이스와 스키마 설계](#8-데이터베이스와-스키마-설계)
+9. [시스템 구조](#9-시스템-구조)
+10. [보안과 신뢰성](#10-보안과-신뢰성)
+11. [개발과 실행](#11-개발과-실행)
+12. [검증 기준](#12-검증-기준)
+13. [운영과 문제 해결](#13-운영과-문제-해결)
+14. [향후 계획과 결정 기록](#14-향후-계획과-결정-기록)
+15. [부록](#15-부록)
 
 ---
 
-## 2. Installation and Setup
+## 1. 문서 안내
 
+### 1.1 문서 목적
+
+#### 1.1.1 대상 독자
+이 문서는 본 데이터 플랫폼을 기획·분석하는 연구자 및 기획자, 데이터 파이프라인과 비즈니스 로직을 구현하는 백엔드/프론트엔드 엔지니어, 운영 및 인프라를 관리하는 시스템 관리자를 대상으로 합니다. 업무 도메인 용어와 데이터 모델을 먼저 정의하고, 필요한 경우 세부 스키마와 구현 코드를 함께 설명합니다.
+
+#### 1.1.2 문서 범위
+현재 플랫폼에서 지원하는 17개 핵심 지표의 수집, 정규화, 마트 발행, 파생 지표 연산, SGIS 공간 경계 연동, 대시보드 UI, 그리고 미디어 팩토리(숏폼 및 인포그래픽 렌더러)를 다룹니다. 향후 구현 예정인 백로그는 별도 장에서 로드맵으로 관리합니다.
+
+#### 1.1.3 문서의 역할
+새로운 통계표나 지표를 추가하거나 파이프라인 구조를 변경할 때 본 문서의 시맨틱 모델과 제약 조건을 먼저 검토하고 기준을 수립합니다. 구현이 완료되면 상태를 갱신하고 스키마 및 API 명세와 일치하는지 확인합니다.
+
+### 1.2 문서 관리
+
+#### 1.2.1 기능 상태 표기
+
+| 상태 | 의미 |
+|---|---|
+| 구현됨 | 현재 코드베이스 및 로컬 DB에서 동작을 확인할 수 있음 |
+| 일부 구현 | 핵심 데이터는 적재되었으나 UI 연동이나 자동화가 미완료됨 |
+| 설계 예정 | 파이프라인 정책과 목표는 수립했으나 코드가 작성되지 않음 |
+| 결정 필요 | 데이터 출처(KOSIS/행안부) 협의 또는 라이선스 검토가 더 필요함 |
+
+#### 1.2.2 갱신 원칙
+데이터 모델, KOSIS 연동 규격, 파생 계산 수식 또는 UI 구성 요소가 변경되면 관련 문단도 같은 작업(커밋)에서 갱신합니다. 문서와 실제 코드가 불일치할 경우 데이터베이스 스키마와 소스코드를 우선하되, 즉시 문서를 동기화합니다.
+
+#### 1.2.3 문서 분리 기준
+본 문서를 최상위 통합 기준 문서로 유지합니다. 특정 모듈(예: KOSIS 어댑터 상세 규격, 미디어 팩토리 렌더링 엔진)이 방대해질 경우 `docs/superpowers/` 디렉토리로 세부 문서를 분리하고 본 문서에는 요약과 링크를 기록합니다.
+
+---
+
+## 2. Regional Data Explorer 개요
+
+### 2.1 앱의 목적
+
+#### 2.1.1 해결하려는 문제
+- **통계 파편화**: 지방세(취득세·재산세 등), 인구 이동, 고령화율, 재정자립도, 사업체 수 등 핵심 지표가 기관별·통계표별로 분산되어 있어 종합적인 비교가 어려움.
+- **행정구역 경계 불일치**: 2010년부터 2024년까지 지자체의 신설, 통합, 명칭 변경(예: 통합 창원시, 청주시, 대구 군위군 편입 등)으로 인해 과거 통계와 현재 지리 정보의 매핑 오류가 빈번함.
+- **데이터 활용 장벽**: 대중과 연구자가 복잡한 KOSIS 분류 코드를 알지 못해도 브라우저에서 직관적으로 15개년 시계열 추이와 지역 간 격차를 시각적으로 탐색할 수 있는 인터페이스 부재.
+
+#### 2.1.2 주요 사용자
+- **지자체 정책 연구원 및 공무원**: 지역 소멸 위험도, 재정 건전성, 세원 변화 추이를 분석하여 정책을 수립하는 사용자.
+- **데이터 저널리스트 및 크리에이터**: 지역 간 격차(양극화)를 시각화하고 숏폼 영상(쇼츠/릴스)이나 인포그래픽으로 콘텐츠화하려는 사용자.
+- **일반 시민 및 지역 분석가**: 거주지 및 관심 지역의 1인당 지방세, 일자리 규모, 출산율 추이를 확인하고자 하는 사용자.
+
+#### 2.1.3 제품 원칙
+- **시맨틱 정규화**: 사용자는 KOSIS 내부 코드(`orgId`, `tblId`, `objL1` 등)를 알 필요 없이 `Region × Period × Indicator`라는 단일 통일 모델로만 데이터를 조회합니다.
+- **불변 원본(RAW) 보존**: 수집된 원본 API 응답은 절대 수정하거나 덮어쓰지 않고 Insert-only로 보존하여 언제든 재정규화(Re-normalization)가 가능해야 합니다.
+- **독립적인 브라우저 격리**: 브라우저는 KOSIS나 SGIS 외부 API를 직접 호출하지 않으며, 서버에서 사전에 빌드된 마트 API와 정적 GeoJSON 파일만 안전하고 빠르게 읽습니다.
+- **엄격한 결측치 분리**: '수치 0'과 '데이터 미제공(결측/비해당)'을 엄격히 구분하여 통계 왜곡을 방지합니다.
+
+### 2.2 지원 환경
+
+#### 2.2.1 백엔드 및 런타임
+- **Python**: 3.12+ (검증 환경: Python 3.14)
+- **Django**: 5.2 LTS (모듈러 모놀리스 아키텍처)
+- **주요 라이브러리**: `psycopg 3.2`, `Shapely 2.1`, `pyproj 3.7`
+
+#### 2.2.2 데이터베이스 및 저장소
+- **PostgreSQL**: 16+ (기본 포트: `5433`)
+- **필수 Extension**: `btree_gist` (유효 기간 중복 방지 Exclusion Constraint 지원)
+- **데이터 모델 분리**: 5개 독립 스키마(`geo`, `semantic`, `catalog`, `ingest`, `mart`)
+
+#### 2.2.3 프론트엔드 및 시각화
+- 순수 Vanilla JS (외부 번들러 종속성 없음)
+- **지도 엔진**: Leaflet 1.9.4
+- **차트 엔진**: Chart.js 4.5.1
+- **미디어 엔진**: HTML5 Canvas, Web Audio API, MediaRecorder API
+
+### 2.3 현재 제공 범위
+
+#### 2.3.1 구현된 핵심 기능
+- **17개 다차원 지표 적재 완료**: 지방세 8종, 지자체 재정 1종, 인구/소멸 5종, 지역경제 3종의 15개년(2010–2024) 전국 230개 시·군·구 데이터 완비.
+- **인터랙티브 맵 & 8단계 분위수 히트맵**: SGIS 2010~2024 연도별 행정경계와 연동된 Choropleth 시각화.
+- **적응형 KPI 및 시계열 분석 차트**: 지표 선택 시 메인/보조/인구 카드가 유기적으로 반응하며 15개년 추세 그래프 렌더링.
+- **전국 기초자치단체 랭킹 순위표**: 전국 순위 및 시·도 내 순위 필터, 실시간 텍스트 검색 및 행 선택 동기화.
+- **지자체 미디어 팩토리 (3-in-1)**:
+  1. 바 차트 레이스 2.0 (절대값 순위 및 15개년 성장률 레이스, BGM 믹싱, 썸네일 캡처).
+  2. 1 vs 1 지자체 라이벌 배틀 쇼츠 생성기 (9:16 세로형 12초 애니메이션 영상 렌더링).
+  3. 1-Page 지자체 인포그래픽 성적표 (1:1 Cyber-Glass 디자인의 등급 스탬프 카드 다운로드).
+
+#### 2.3.2 설계 및 진행 중인 기능
+- 지자체 간 1:1 다중 오버레이 비교 모드 (Compare View).
+- 4분면 상관관계 산점도 (Correlation Scatter Plot).
+- 엑셀(.xlsx) 및 CSV 원클릭 데이터 내보내기.
+- 연간 신규 통계 자동 수집 스케줄러.
+
+---
+
+## 3. 사용자와 권한
+
+### 3.1 사용자 및 클라이언트
+
+#### 3.1.1 대시보드 일반 사용자
+- 별도의 회원가입이나 로그인 절차 없이 모든 통계 지표, 지도, 시계열 차트, 랭킹 순위표를 즉시 조회할 수 있습니다.
+- 모든 조회 트래픽은 읽기 전용(Read-only) REST API를 통해 안전하게 서빙됩니다.
+
+#### 3.1.2 미디어 콘텐츠 생성자
+- 미디어 팩토리 탭을 통해 바 차트 레이스, 라이벌 배틀 쇼츠, 인포그래픽 성적표를 자유롭게 커스터마이징하고 고해상도 미디어 파일(WebM, PNG)로 렌더링 및 다운로드할 수 있습니다.
+
+### 3.2 관리자 권한
+
+#### 3.2.1 Django Admin 및 슈퍼유저
+- `DatasetRegistry` 및 통계표 메타데이터 매핑 승인 권한을 가집니다.
+- KOSIS API에서 새로 탐색된(Discovered) 메타데이터는 관리자의 승인(DatasetVersion `ACTIVE`)을 거쳐야만 정규화 파이프라인에 투입됩니다.
+
+#### 3.2.2 CLI 파이프라인 운영자
+- 서버 로컬 셸 접근 권한을 가진 운영자로, `manage.py` 커맨드를 통해 KOSIS 데이터 수집, 정규화, 마트 발행, SGIS 경계 변환 등의 배치를 수동 트리거하거나 크론에 등록할 수 있습니다.
+
+### 3.3 API 접근 및 보안 모델
+
+#### 3.3.1 시맨틱 쿼리 엔드포인트
+- 엔드포인트: `/api/v1/observations/`, `/api/v1/ranking/`, `/api/v1/boundaries/{year}/`
+- 프론트엔드는 KOSIS 세부 파라미터를 전혀 전달할 수 없으며, 표준화된 `region_key`, `indicator_key`, `year` 파라미터만 허용됩니다.
+
+#### 3.3.2 외부 API 키 격리
+- `KOSIS_API_KEY` 및 SGIS 인증 정보는 오직 백엔드 환경변수(`.env`)로만 관리됩니다.
+- 클라이언트 브라우저 응답, 로그, 번들 파일, Fixture 어디에도 외부 API 키가 포함되지 않습니다.
+
+---
+
+## 4. 화면과 사용자 흐름
+
+### 4.1 메인 대시보드
+
+#### 4.1.1 15개년 타임라인 슬라이더
+- 상단 연도 슬라이더(2010년~2024년)를 드래그하거나 연도 버튼을 클릭하여 시점을 전환합니다.
+- 연도 전환 시 지도(Choropleth), 순위표, 상단 요약 카드가 지연 없이 실시간 동기화됩니다.
+
+#### 4.1.2 적응형 KPI 카드 3종
+- **주요 지표 카드**: 현재 선택된 지표의 당해 연도 전국 평균 또는 선택 지자체의 값을 표시.
+- **재정 보조 카드**: 선택 지표가 세입 관련인 경우 총 세액 또는 1인당 세액을 교차 표시.
+- **인구 기준 카드**: 해당 연도 주민등록 연말 기준 인구수를 자동으로 매칭하여 기준 규모를 제공.
+
+#### 4.1.3 지표 선택기 (그룹화)
+- `<optgroup>`으로 구조화된 드롭다운 메뉴를 통해 4대 카테고리(지방세 8종, 지자체 재정 1종, 인구소멸 5종, 지역경제 3종)의 17개 지표를 원클릭 전환할 수 있습니다.
+
+### 4.2 인터랙티브 지도 뷰 (Leaflet 기반)
+
+#### 4.2.1 Leaflet Choropleth 지도
+- 전국 230개 기초자치단체의 폴리곤을 렌더링하고, 선택된 지표값에 따라 색상 채우기를 적용합니다.
+- 연도별 실제 행정구역 경계 GeoJSON을 동적으로 불러와 역사적 경계 변화를 완벽히 반영합니다.
+
+#### 4.2.2 8단계 상위 분위수 히트맵
+- 단순 선형 분할이 아닌 분위수(Percentile) 기반의 시각적 분별력을 제공합니다:
+  - 상위 1% 이내: `#ef4444` (진한 빨강)
+  - 상위 1~5%: `#f97316` (주황)
+  - 상위 5~10%: `#fb923c`
+  - 상위 10~20%: `#f59e0b` (노랑)
+  - 상위 20~30%: `#eab308`
+  - 상위 30~40%: `#06b6d4` (청록)
+  - 상위 40~50%: `#3b82f6` (파랑)
+  - 하위 50%: `#334155` (다크 슬레이트)
+
+#### 4.2.3 폴리곤 인터랙션
+- 지자체 영역에 마우스 호버 시 툴팁(지역명, 순위, 지표값)이 표시됩니다.
+- 클릭 시 해당 지자체가 고정 선택되며, 하단 시계열 차트 및 상세 프로필 모달이 열립니다.
+
+### 4.3 순위표 및 탐색기
+
+#### 4.3.1 전국/시·도별 순위 토글
+- `[전국 순위]` 버튼과 `[시·도 내 순위]` 필터 탭을 제공하여 서울 내에서의 구별 순위나 경기 내에서의 시별 순위를 손쉽게 분리 조회할 수 있습니다.
+
+#### 4.3.2 실시간 검색 및 메달 표시
+- 1위(금), 2위(은), 3위(동) 메달 배지를 부여합니다.
+- 지자체명 검색창에 실시간 키워드 필터링(초성/문자열)을 지원합니다.
+
+#### 4.3.3 행 선택 동기화
+- 순위표의 특정 행을 클릭하면 지도에서 해당 지자체 위치로 부드럽게 줌/팬(Fly-to)되며 하이라이트됩니다.
+
+### 4.4 지역 프로필 및 시계열 차트
+
+#### 4.4.1 Chart.js 15개년 추이 차트
+- 선택된 지자체의 2010~2024년 연속 변화 곡선을 인터랙티브 라인/바 복합 차트로 표시합니다.
+- 5개년 보유 지표(사업체 종사자수 등)는 해당 구간에 맞춰 동적으로 X축 범위가 자동 조정됩니다.
+
+#### 4.4.2 맞춤형 단위 포맷팅 (`formatIndicatorValue`)
+- 금액형: `억원`, `만원`, `원` 단위 지능형 변환.
+- 비율형: `57.21%` 소수점 2자리 표기.
+- 지수/계수형: 출산율 `0.72명`, 천명당 사업체수 `375.6개/천명`.
+- 수량형: `1,193,200명` 천단위 콤마 포맷팅.
+
+### 4.5 지자체 데이터 미디어 팩토리
+
+#### 4.5.1 바 차트 레이스 2.0 (Bar Chart Race 2.0)
+- 15년간 지자체 순위가 역동적으로 바뀌는 실시간 애니메이션 재생.
+- **2대 모드 지원**: '절대값 순위 모드' 및 2010년 대비 '누적 성장률(%) 순위 모드'.
+- Web Audio API 기반의 커스텀 BGM 삽입 및 고해상도 썸네일 PNG 원클릭 캡처.
+
+#### 4.5.2 1 vs 1 지자체 라이벌 배틀 쇼츠 생성기
+- 9:16 비율(1080x1920)의 12초 모바일 세로형 쇼츠 비디오 자동 생성.
+- **5대 라운드 대결**: 소득(1R) ➔ 일자리(2R) ➔ 부촌지수(3R) ➔ 성장성(4R) ➔ 미래출산(5R).
+- 게이지바 격돌 효과음, 점수 카운트업, 우승자 왕관 수여 애니메이션 후 WebM 다운로드 제공.
+
+#### 4.5.3 1-Page 지자체 인포그래픽 성적표
+- 1:1 정방형 (1080x1080) 사이버 글래스 테마의 요약 카드.
+- 선택 지자체의 인구, 주요 지표 전국 순위, 백분위, 종합 평점(S, A+, A, B 등) 스탬프 날인 후 이미지 저장.
+
+---
+
+## 5. 통계 데이터와 지표 체계
+
+### 5.1 시맨틱 정규화 모델
+
+#### 5.1.1 Region × Period × Indicator 모델
+모든 이기종 통계 데이터를 통일된 3차원 축으로 정규화하여 저장합니다:
+```text
+[Region (행정구역)] × [Period (연도/기간)] × [Indicator (통계 지표)] ➔ Observation (값)
+```
+
+#### 5.1.2 연도별 지자체 코드 매핑
+- 지자체 코드는 영구 불변이 아닙니다. 연도별 유효구간(`valid_from`, `valid_to`)을 갖는 `RegionIdentifier`를 통해 SGIS 행정동코드(`adm_cd`)와 행안부 행정표준코드(`org_cd`)를 유기적으로 연결합니다.
+- 비교 분석의 기본 단위는 `BASIC_LOCAL_GOVERNMENT`(시·군·자치구 230여 개)로 한정하여 일반구(예: 수원시 장안구)가 자치구와 혼합되어 순위가 왜곡되는 문제를 원천 차단합니다.
+
+#### 5.1.3 관측값 상태 (Observation Status)
+- 관측값의 품질을 명확히 추적하기 위해 상태 코드를 강제합니다:
+  - `PRESENT`: 정상 수치 존재.
+  - `MISSING`: 수집 대상 연도이나 원천에서 누락됨.
+  - `NOT_APPLICABLE`: 지자체 신설 이전 등으로 해당 없음.
+  - `SUPPRESSED`: 통계적 비밀보호로 인한 미공표.
+
+### 5.2 핵심 17개 지표 분류
+
+#### 5.2.1 🏛️ 지방세 8종 (15개년: 2010–2024)
+| 지표 키 | 한글 지표명 | 단위 | 수집 주기 | 2024년 전국 1위 자치단체 예시 |
+|---|---|---|---|---|
+| `ACQUISITION_TAX_PER_CAPITA` | 1인당 취득세 | 원/인 | 연간 (15개년) | 서울 중구 (약 250만원/인) |
+| `PROPERTY_TAX_PER_CAPITA` | 1인당 재산세 | 원/인 | 연간 (15개년) | 서울 중구 (208만원/인), 강남구 (198만원/인) |
+| `LOCAL_INCOME_TAX_PER_CAPITA` | 1인당 지방소득세 | 원/인 | 연간 (15개년) | 서울 중구 (856만원/인), 강남구 (283만원/인) |
+| `LOCAL_TAX_TOTAL_PER_CAPITA` | 1인당 지방세 총액 | 원/인 | 연간 (15개년) | 서울 중구 (1,510만원/인), 강남구 (815만원/인) |
+| `ACQUISITION_TAX` | 취득세 총세입액 | 원 | 연간 (15개년) | 서울 강남구 (1조 1,686억원) |
+| `PROPERTY_TAX` | 재산세 총세입액 | 원 | 연간 (15개년) | 서울 강남구 (1조 1,050억원) |
+| `LOCAL_INCOME_TAX` | 지방소득세 총세입액 | 원 | 연간 (15개년) | 서울 강남구 (1조 5,773억원) |
+| `LOCAL_TAX_TOTAL` | 지방세 총 세입액 | 원 | 연간 (15개년) | 서울 강남구 (4조 5,462억원) |
+
+#### 5.2.2 💰 지자체 재정 1종 (15개년: 2010–2024)
+| 지표 키 | 한글 지표명 | 단위 | 수집 주기 | 2024년 전국 1위 자치단체 예시 |
+|---|---|---|---|---|
+| `FISCAL_INDEPENDENCE` | 재정자립도 | % | 연간 (15개년) | 경기 하남시 (57.21%), 서울 강남구 (56.08%) |
+
+#### 5.2.3 👥 인구 및 소멸 5종 (15개년: 2010–2024)
+| 지표 키 | 한글 지표명 | 단위 | 수집 주기 | 2024년 주요 특징 지자체 |
+|---|---|---|---|---|
+| `ELDERLY_POPULATION_RATIO` | 고령인구 비율 (65세 이상) | % | 연간 (15개년) | 경북 의성군 (47.50%), 대구 군위군 (45.2%) |
+| `TOTAL_FERTILITY_RATE` | 합계출산율 | 명 | 연간 (15개년) | 전남 영광군 (1.70명), 강원 양구군 (1.45명) |
+| `NET_MIGRATION_RATE` | 순이동률 | % | 연간 (15개년) | 대구 중구 (+8.71%), 충남 아산시 (+4.2%) |
+| `NET_MIGRATION` | 순이동인구 | 명 | 연간 (15개년) | 경기 화성시 (+21,199명), 서울 강남구 (+11,889명) |
+| `POPULATION` | 주민등록인구 | 명 | 연간 (15개년) | 경기 수원시 (119.3만명), 서울 송파구 (65.4만명) |
+
+#### 5.2.4 🏭 지역경제 3종 (2010–2024 / 2020–2024)
+| 지표 키 | 한글 지표명 | 단위 | 수집 주기 | 2024년 전국 1위 자치단체 예시 |
+|---|---|---|---|---|
+| `BUSINESS_ESTABLISHMENTS` | 가동 사업체 수 | 개 | 연간 (15개년) | 경기 화성시 (234,216개), 서울 강남구 (209,325개) |
+| `BUSINESSES_PER_THOUSAND` | 천명당 사업체 수 | 개/천명 | 연간 (15개년) | 부산 중구 (806.8개/천명), 서울 중구 (621.4개) |
+| `BUSINESS_EMPLOYEES` | 사업체 종사자 수 | 명 | 연간 (5개년) | 서울 강남구 (755,251명), 서울 송파구 (401,230명) |
+
+### 5.3 파생 지표 산출 엔진
+
+#### 5.3.1 1인당 지표 계산
+파생 지표는 임의의 raw SQL로 계산하지 않고, 등록된 파생 규칙에 따라 산출됩니다:
+```text
+ACQUISITION_TAX_PER_CAPITA = ACQUISITION_TAX (총세입액) / POPULATION (주민등록인구)
+BUSINESSES_PER_THOUSAND = (BUSINESS_ESTABLISHMENTS / POPULATION) * 1000
+```
+
+#### 5.3.2 분모 결측 및 0 처리
+- 인구수가 0이거나 결측(Missing)인 경우, 계산 결과는 강제로 `MISSING` 상태로 기록되며 0으로 치환되지 않습니다.
+- 모든 파생 관측값은 입력으로 사용된 소스 관측값들의 ID와 파생 수식 버전을 메타데이터(`lineage`)로 기록합니다.
+
+### 5.4 행정구역 공간 정보 (SGIS)
+
+#### 5.4.1 연도별 행정경계 GeoJSON
+- 통계청 SGIS 행정구역 경계 API(`hadmarea.geojson`)를 활용하여 2010년부터 2024년까지 연도별 230개 지자체 경계를 확보했습니다.
+- 연도별 경계는 브라우저 렌더링 성능을 위해 Shapely와 pyproj를 사용하여 유효 토폴로지를 유지하면서 정밀하게 단순화(Simplify)되었습니다.
+
+#### 5.4.2 SGIS 코드 매핑 원칙
+- SGIS 행정동코드(`adm_cd`, 5자리/7자리)는 KOSIS 코드와 체계가 다를 수 있으므로, 연도별 매핑 테이블(`RegionIdentifier`)을 통해서만 조인합니다.
+
+---
+
+## 6. 데이터 파이프라인 설계
+
+### 6.1 파이프라인 목적과 원칙
+
+```text
+[KOSIS / SGIS OpenAPI]
+        │
+        ▼ (350ms 레이트 리밋 / 40,000셀 제한)
+[ingest.raw_payload]  <--- 불변 저장 (Insert-Only, Checksum 보존)
+        │
+        ▼ (품질 검사 및 기호 파싱)
+[semantic.observation] <--- 시맨틱 정규화 (Region × Period × Indicator)
+        │
+        ▼ (파생 연산 엔진)
+[mart.observation]     <--- 최종 발행 (Lineage 추적 가능, 색인 최적화)
+        │
+        ▼ (JSON API / GeoJSON)
+[Browser Client]
+```
+
+### 6.2 메타데이터 탐색 (Discovery)
+
+#### 6.2.1 KOSIS 통계표 탐색
+- `statisticsList.do` 및 `statisticsData.do?method=getMeta` API를 호출하여 통계표 구조, 단위, 분류 항목(`objL1`–`objL8`)을 자동 조회합니다.
+- 탐색 결과는 `catalog.dataset_registry`에 등록되어 검토 대기 상태가 됩니다.
+
+#### 6.2.2 수동 승인 원칙
+- KOSIS 분류 체계가 잘못 매핑되는 것을 방지하기 위해, 관리자가 해당 `DatasetVersion`의 매핑 룰을 검증하고 `ACTIVE`로 설정한 것만 수집 단계로 이관됩니다.
+
+### 6.3 데이터 수집 (Ingestion)
+
+#### 6.3.1 호출 제한 준수
+- KOSIS 운영 가이드의 정책(분당 200회 제한)에 따라 요청 간격을 최소 350ms 이상 유지합니다.
+- 단일 요청당 최대 셀 수는 40,000셀 이하로 슬라이싱하여 요청합니다.
+
+#### 6.3.2 원본 Raw 적재
+- KOSIS에서 응답받은 페이로드는 원문 그대로 `ingest.raw_payload`에 JSON/TEXT 형태로 저장하며, 페이로드 체크섬(`SHA-256`)과 수집 시각을 함께 기록합니다.
+
+### 6.4 정규화 및 품질 검증
+
+#### 6.4.1 기호와 수치 분리
+- KOSIS API 파라미터 `smblChk=Y`를 적용하여 수치 필드 `DT`에 포함된 통계 기호(`-`, `…`, `*`, `e` 등)를 식별하고, 실제 숫자와 기호 플래그를 분리하여 저장합니다.
+
+#### 6.4.2 단위 정규화
+- 원본 단위(`천원`, `백만원`, `천명` 등)를 표준 단위(`KRW`, `PERSON` 등)로 환산하는 배율 룰을 적용하여 `numeric(38,10)` 정밀도로 변환합니다.
+
+### 6.5 마트 발행 (Publishing)
+
+#### 6.5.1 멱등성 보장
+- 마트 발행 단계는 동일한 원본 데이터에 대해 여러 번 실행해도 동일한 결과를 보장하도록 `ON CONFLICT DO UPDATE` 구문을 활용합니다.
+
+#### 6.5.2 출처 추적성 (Lineage)
+- 대시보드 화면에서 특정 숫자를 클릭하면 해당 값이 어떤 KOSIS 통계표, 어떤 일련번호의 응답에서 기인했는지 원천 추적 링크를 제공합니다.
+
+---
+
+## 7. 배치와 스케줄링
+
+### 7.1 Management Command 구조
+
+#### 7.1.1 주요 CLI 커맨드 목록
+- `python manage.py discover_kosis_metadata`: KOSIS 최신 메타데이터 탐색.
+- `python manage.py ingest_kosis_data --dataset-version=<ID>`: 지정된 버전에 대한 원본 데이터 수집.
+- `python manage.py normalize_observations`: Raw 데이터를 시맨틱 모델로 정규화.
+- `python manage.py publish_mart`: 마트 테이블로 최종 발행 및 파생 지표 자동 계산.
+- `python manage.py sync_sgis_boundaries --year=<YYYY>`: SGIS 최신 경계 GeoJSON 수집 및 간소화.
+
+### 7.2 스케줄링 정책
+
+#### 7.2.1 연간/월간 정례 갱신
+- 통계청 및 행안부의 연간 지방세 결산 및 주민등록 통계 공표 주기(매년 12월 ~ 익년 2월)에 맞춰 OS Cron 또는 워커 프로세스가 정기적으로 수집 파이프라인을 구동합니다.
+
+#### 7.2.2 실패 재시도 정책
+- KOSIS API 오류 코드 `40`(호출 건수 초과) 및 `50`(서버 에러) 발생 시 지수 백오프(Exponential Backoff: 1초, 2초, 4초, 8초...)를 적용하여 최대 5회 재시도합니다.
+- 인증 오류(`10`, `11`) 발생 시 즉시 작업을 중단하고 관리자에게 알림을 발송합니다.
+
+---
+
+## 8. 데이터베이스와 스키마 설계
+
+### 8.1 PostgreSQL 5대 스키마
+
+#### 8.1.1 `geo` 스키마
+- `region`: 자치단체 고유 식별자 및 계층 구조(`BASIC_LOCAL_GOVERNMENT`, `PROVINCE`).
+- `region_identifier`: 연도별 코드 시스템(`SGIS`, `KOSIS`, `ADMIN_CODE`) 매핑 테이블.
+- `region_relation`: 자치단체 통합/분할/폐지 역사 기록 (`MERGED_TO`, `SPLIT_TO`).
+- `boundary_set` & `boundary_feature`: 연도별 단순화된 폴리곤 형상 및 속성.
+
+#### 8.1.2 `semantic` 스키마
+- `indicator`: 지표 마스터 정의 (지표 키, 한글명, 카테고리, 단위).
+- `metric`: 측정 형태 (`COLLECTED`, `COUNT`, `RATIO`, `DERIVED`).
+- `unit`: 정규화 단위 (`KRW`, `PERSON`, `PERCENT`, `PER_THOUSAND`).
+- `period`: 연도별/분기별 기준 기간 정의.
+- `derived_rule`: 파생 지표 수식 및 분모/분자 매핑 규칙.
+
+#### 8.1.3 `catalog` 스키마
+- `dataset_registry`: KOSIS 기관ID, 통계표ID 관리.
+- `dataset_version`: 수집 버전 및 승인 상태(`PENDING`, `ACTIVE`, `DEPRECATED`).
+- `dimension_mapping`: `C1`~`C8` 항목과 지자체/지표 매핑 룰.
+
+#### 8.1.4 `ingest` 스키마
+- `ingest_job`: 수집 작업 로그, 총 수집 셀 수, 시작/종료 시각.
+- `raw_payload`: 원본 JSON 응답, 체크섬, HTTP 응답 상태.
+
+#### 8.1.5 `mart` 스키마
+- `observation`: 대시보드 쿼리 전용 최적화 테이블. 복합 인덱스(`region_id, indicator_id, period_id`) 적용.
+
+### 8.2 무결성 및 인덱스
+
+#### 8.2.1 `btree_gist` 배제 제약 조건
+- `region_identifier` 및 유효 기간 테이블에 PostgreSQL `btree_gist` 확장을 적용하여 동일한 코드 체계에서 동일 코드의 유효 기간이 겹치는 것을 DB 레벨에서 원천 차단합니다.
+
+#### 8.2.2 수치 정밀도
+- 모든 화폐 금액 및 통계 계산 수치는 부동 소수점 오차를 방지하기 위해 `numeric(38,10)`으로 통일합니다.
+
+---
+
+## 9. 시스템 구조
+
+### 9.1 백엔드 아키텍처
+- Django 모듈러 모놀리스: 데이터 수집 작업(Ingest Worker)과 웹 서비스(Web Process)가 단일 코드베이스에서 분리된 OS 프로세스로 구동됩니다.
+- 클라이언트는 오직 `queries.py`가 제공하는 캐시 최적화된 시맨틱 뷰 레이어만 접근합니다.
+
+### 9.2 프론트엔드 구조
+- 번들러(Webpack/Vite 등)가 필요 없는 순수 바닐라 모듈 패턴.
+- 브라우저 Canvas와 Web Audio API를 활용하여 서버 GPU 없이도 클라이언트 기기에서 직접 60fps 쇼츠 비디오와 인포그래픽 카드를 생성합니다.
+
+### 9.3 주요 디렉토리 및 파일 지도
+
+| 모듈/파일 | 역할 및 기능 |
+|---|---|
+| [`manage.py`](manage.py) | Django CLI 및 배치 명령어 실행 진입점 |
+| [`explorer/models/`](explorer/models) | 5개 스키마(`geo`, `semantic`, `catalog`, `ingest`, `mart`) 데이터 모델 정의 |
+| [`explorer/kosis/`](explorer/kosis) | KOSIS OpenAPI 연동 어댑터, 쿼리 플래너 및 레이트 리미터 |
+| [`explorer/boundaries.py`](explorer/boundaries.py) | SGIS 경계 GeoJSON 수집, 파싱 및 토폴로지 단순화 로직 |
+| [`explorer/updater.py`](explorer/updater.py) | 데이터 정규화 및 파생 엔진 파이프라인 오케스트레이터 |
+| [`explorer/queries.py`](explorer/queries.py) | 대시보드 및 순위표 조회용 고성능 SQL/ORM 쿼리 서비스 |
+| [`explorer/views.py`](explorer/views.py) | 대시보드 템플릿 렌더링 및 페이지 컨트롤러 |
+| [`explorer/api.py`](explorer/api.py) | 프론트엔드 통신용 REST JSON API 엔드포인트 |
+| [`explorer/templates/`](explorer/templates) | 메인 대시보드 및 미디어 팩토리 HTML 템플릿 |
+| [`explorer/static/`](explorer/static) | Leaflet/Chart.js 연동 스크립트, 다크 테마 CSS, 캔버스 렌더러 |
+
+---
+
+## 10. 보안과 신뢰성
+
+### 10.1 외부 API 키 보안
+- KOSIS API Key는 `.env` 파일의 `KOSIS_API_KEY` 환경변수를 통해 백엔드로만 로드됩니다.
+- 프론트엔드 정적 파일 및 Git 저장소에 키가 하드코딩되지 않도록 검사합니다.
+
+### 10.2 시스템 복원력 (Fault Tolerance)
+- KOSIS API가 일시 점검 중이거나 다운되더라도, 이미 `mart`에 적재된 15개년 통계 데이터와 로컬 GeoJSON은 사용자에게 100% 무중단 서비스됩니다.
+- 수집 도중 네트워크 끊김이 발생해도 각 슬라이스 단위 트랜잭션이 보장되어 부분 데이터 오염을 방지합니다.
+
+---
+
+## 11. 개발과 실행
+
+### 11.1 로컬 환경 구축
+
+#### 11.1.1 가상환경 생성 및 의존성 설치
 ```bash
-# 1. Create and activate virtual environment
+# 1. 가상환경 생성 및 활성화
 python -m venv .venv
-# On Windows:
-.\.venv\Scripts\Activate.ps1
-# On Linux/macOS:
-# source .venv/bin/activate
+.\.venv\Scripts\Activate.ps1   # Windows
+# source .venv/bin/activate    # macOS/Linux
 
-# 2. Install dependencies
+# 2. 패키지 설치
 pip install -e .
 ```
 
----
+#### 11.1.2 환경변수 설정 (`.env`)
+```ini
+DATABASE_URL=postgresql://postgres@localhost:5433/kosis
+KOSIS_API_KEY=your_kosis_openapi_key_here
+DJANGO_SECRET_KEY=your_django_secret_key
+DEBUG=True
+```
 
-## 3. Database Migration and Health Check
-
-Ensure PostgreSQL is running and credentials match `DATABASE_URL`:
-
+### 11.2 데이터베이스 초기화 및 실행
 ```bash
-# Run Django database migrations
+# 1. 마이그레이션 적용
 python manage.py migrate
 
-# Validate Django configuration and schema consistency
-python manage.py check
+# 2. 2010~2024년 SGIS 경계 및 마트 데이터 생성 (필요 시)
+python manage.py sync_sgis_boundaries
+python manage.py publish_mart
+
+# 3. 개발 서버 기동
+python manage.py runserver 0.0.0.0:8000
 ```
 
 ---
 
-## 4. Metadata Discovery Workflow
+## 12. 검증 기준
 
-Before ingesting datasets, operators run discovery to fetch and canonicalize official metadata without modifying production Registry tables.
+### 12.1 데이터 무결성 검증
+- **결측치 구분**: 인구수 0명인 지역(해당 없음)이 0이 아닌 `MISSING` 또는 미표시로 처리되는지 검증.
+- **파생 수치 정합성**: `1인당 취득세 * 주민등록인구`가 원본 `취득세 총세입액`과 오차 범위(반올림 제외) 내에서 일치하는지 전수 검증.
+- **연도별 자치단체 수 일치**: 각 연도별 기초자치단체 수가 행정안전부 주민등록 인구통계 대상 지자체 수와 정확히 부합하는지 확인.
 
-```bash
-# Discover Acquisition Tax candidates
-python manage.py discover_kosis \
-  --indicator ACQUISITION_TAX \
-  --metric COLLECTED \
-  --from-year 2010 \
-  --to-year 2024 \
-  --query "취득세" \
-  --query "기초자치단체별 부과징수" \
-  --output var/discovery/acquisition-tax.json
-
-# Discover Resident Population candidates
-python manage.py discover_kosis \
-  --indicator POPULATION \
-  --metric POPULATION_COUNT \
-  --from-year 2010 \
-  --to-year 2024 \
-  --query "주민등록인구" \
-  --output var/discovery/population.json
-```
+### 12.2 화면 렌더링 및 UX 검증
+- 15개년 슬라이더를 빠르게 이동해도 Leaflet 지도 타일과 차트가 깜빡임 없이 300ms 이내에 재렌더링되는지 확인.
+- 미디어 팩토리에서 1080x1920 세로형 비디오 인코딩 시 모바일 및 저사양 PC에서 프레임 드랍이 없는지 검증.
 
 ---
 
-## 5. Human Review Checklist & Django Admin Activation Gate
+## 13. 운영과 문제 해결
 
-To guarantee semantic integrity, automated discovery candidates default to `DRAFT`. Activation requires human confirmation via the Django Admin (`/admin/`):
+### 13.1 KOSIS 연동 오류 대응 가이드
 
-1. **Verify Metadata**: Confirm organization ID, table ID, items, dimension semantics, and units.
-2. **Review Tax Owner**: Ensure city/province vs. district local government tax distinctions are preserved without double-counting.
-3. **Approve Region Mappings**: Ensure each source region code (`C1`) correctly maps to a valid `Region` without overlapping valid date ranges.
-4. **Approve Item Mappings**: Check that item codes (e.g. `TAX_COL`, `POP_TOTAL`) map to authoritative `Indicator` and `Metric`.
-5. **Activate Dataset Version**: Change status to `ACTIVE` only after completing all mapping confirmations.
+| 오류 코드 | 원인 | 대응 절차 |
+|---|---|---|
+| `10` / `11` | 인증 실패 / 인증키 불일치 | `.env`의 `KOSIS_API_KEY` 유효성 및 만료일 확인 후 갱신 |
+| `20` / `21` | 잘못된 파라미터 요청 | 메타데이터 매핑 룰(`dimension_mapping`)의 분류 코드 확인 |
+| `30` | 데이터 결과 없음 | 해당 연도 미공표 통계 여부 확인 (결측치 처리) |
+| `31` / `41` | 조회 건수 한도 초과 | 요청 슬라이스 크기 분할 (연도별/지역별 분할 수집) |
+| `40` / `42` | 일일/분당 호출 제한 초과 | 350ms 대기 큐 검증 및 야간 시간대로 수집 스케줄 조정 |
+| `50` | KOSIS 서버 오류 | 지수 백오프 후 최대 5회 재시도 |
 
----
-
-## 6. SGIS Yearly Boundary Acquisition & Loading
-
-Historical boundaries change over time (e.g. 2014 Cheongju/Cheongwon consolidation, Masan integration). Load official SGIS boundary GeoJSON per reference year:
-
-```bash
-python manage.py load_boundaries \
-  --year 2024 \
-  --geojson-file /path/to/sgis_2024.geojson \
-  --source-crs "EPSG:5179"
-```
-
-*Note: Explicit verified CRS (such as `EPSG:5179`) is required. Boundaries are reprojected to `EPSG:4326` (WGS84) and saved statically at `explorer/static/geo/boundaries/{year}.geojson`.*
+### 13.2 행정구역 변경 대응
+- 지자체 명칭 변경(예: 강원도 고성군 vs 경상남도 고성군 등 동음이의어 또는 명칭 변경) 발생 시 `geo.region_name` 테이블에 대체 이름을 추가하여 탐색 오류를 해결합니다.
 
 ---
 
-## 7. Synchronization & Repair Procedures
+## 14. 향후 계획과 결정 기록
 
-### Full Live Sync
-Once dataset versions are marked `ACTIVE`, run the unified orchestrator:
+### 14.1 로드맵 및 향후 백로그
 
-```bash
-# Sync all active dataset versions from 2010 to 2024
-python manage.py sync_mvp
+#### 14.1.1 📌 Priority 1: 분석 및 비교 뷰 고도화
+- **지자체 1:1 다중 비교 (Compare Mode)**: 2~3개 지자체(예: 서울 강남구 vs 경기 화성시 vs 부산 해운대구)를 동시 선택하여 시계열 오버레이 및 8축 다차원 레이더 차트 제공.
+- **4분면 상관관계 분석 (Correlation Scatter Plot)**: `X축: 재정자립도` vs `Y축: 1인당 지방세`, `X축: 고령화율` vs `Y축: 출산율` 등 230개 자치단체 산점도 시각화.
+- **주간인구지수 스냅샷 추가**: 5년 주기 인구주택총조사 통계를 반영하여 직주근접성 및 베드타운 여부 지표 보강.
 
-# Or sync specific dataset version(s)
-python manage.py sync_mvp --dataset-version 1 --dataset-version 2
-```
+#### 14.1.2 📌 Priority 2: 사용자 편의성 및 데이터 내보내기
+- **원클릭 엑셀/CSV 다운로드**: 현재 선택된 시계열 및 순위표 데이터를 필터링된 형태 그대로 파일 내보내기 지원.
+- **URL 딥링크 (Deep Linking)**: `/?region=KR_11680&indicator=FISCAL_INDEPENDENCE&year=2024` 파라미터 상태 보존.
 
-### Repair Mode
-If network disruptions or rate limits cause slice failures, invoke repair mode:
+#### 14.1.3 📌 Priority 3: 파이프라인 자동화
+- **연간 신규 데이터 자동 수집 크론**: 공표 시기에 맞춘 자동 폴링 및 검증 알림.
+- **SGIS 행정경계 자동 업데이트**: 행정안전부 행정구역 개편에 따른 신규 경계 GeoJSON 자동 생성 파이프라인.
 
-```bash
-python manage.py sync_mvp --repair
-```
+### 14.2 주요 아키텍처 결정 기록 (ADR)
 
----
-
-## 8. Running the Web Application
-
-Start the local development server:
-
-```bash
-python manage.py runserver 127.0.0.1:8000
-```
-
-Open your browser to:
-- **Dashboard**: `http://127.0.0.1:8000/`
-- **Admin**: `http://127.0.0.1:8000/admin/`
-- **Health Check**: `http://127.0.0.1:8000/health`
-- **Semantic APIs**:
-  - `GET /api/regions`: Active regions
-  - `GET /api/indicators`: Available indicators
-  - `GET /api/series?regionId=...&indicatorId=...&from=2010&to=2024`: Time-series data
-  - `GET /api/rankings?indicatorId=...&year=2024`: Cross-sectional choropleth map and ranking data
+| 번호 | 결정 항목 | 결정 내용 및 이유 |
+|---|---|---|
+| ADR-01 | 원본 Raw 불변 저장 | KOSIS 응답을 절대 덮어쓰지 않고 Insert-Only로 저장하여, 정규화 규칙이 개선되어도 외부 재호출 없이 로컬에서 재생성 가능하도록 보장. |
+| ADR-02 | 클라이언트 API 직접 호출 금지 | 브라우저가 KOSIS/SGIS API를 직접 호출하지 않고 서버에서 사전 구축한 Mart API만 소비하도록 하여 키 보안 및 고속 응답 보장. |
+| ADR-03 | 자치구와 일반구 분리 | 순위 및 랭킹 분석 시 기초자치단체(시·군·자치구)만 대상으로 제한하여 구별 통계가 이중 집계되거나 인구 왜곡이 일어나는 현상 방지. |
 
 ---
 
-## 9. Security & Credential Isolation Guidelines
+## 15. 부록
 
-- **Zero Credential Exposure**: Client-side code and API endpoints **never** receive `KOSIS_API_KEY`, access tokens, or internal credentials.
-- **Log Masking**: All query parameter logging redacts `apiKey`, `accessToken`, and authorization headers.
-- **Rate Limiting**: Built-in 350ms per-request delay strictly observes KOSIS public API rate limits.
-- **Verification**: Run `git grep -n -E "(KOSIS_API_KEY|accessToken)[=:][^[:space:]]+" -- ':!docs/superpowers/*'` before any release.
+### 15.1 용어 사전 (Glossary)
+- **기초자치단체 (Basic Local Government)**: 광역 시·도 산하의 시, 군, 자치구 (2024년 기준 230여 개).
+- **시맨틱 지표 (Semantic Indicator)**: 원천 통계표의 세부 분류 항목을 데이터 플랫폼의 표준 의미 체계로 추상화한 식별자.
+- **Choropleth (단계구분도)**: 지리적 구역별 통계량의 크기를 색상의 농도나 단계로 구분하여 나타낸 통계 지도.
+- **Lineage (데이터 계보)**: 마트에 최종 적재된 특정 지표 값이 어떤 수집 작업(Job)과 원천 KOSIS 레코드에서 생성되었는지 역추적하는 경로.
 
----
-
-## 10. Backup & Operational Safeguards
-
-- **Immutable RAW Observations**: The `raw_observation` table is insert-only. Re-normalizing or publishing creates audit trails and supersedes rows without destructive deletes.
-- **PostgreSQL Data Directory**: Back up PostgreSQL databases (`pg_dump` or filesystem volume snapshots) before any major catalog re-mapping.
-- **Local Cache**: The `var/` directory holds discovery manifests and local temporary files; it is ignored by git to protect environment-specific state.
+### 15.2 KOSIS 표준 API 엔드포인트 목록
+- 통계자료 (파라미터 방식): `https://kosis.kr/openapi/Param/statisticsParameterData.do?method=getList`
+- 통계목록 조회: `https://kosis.kr/openapi/statisticsList.do?method=getList`
+- 통계 메타데이터: `https://kosis.kr/openapi/statisticsData.do?method=getMeta`
+- SGIS 행정구역 경계: `https://sgisapi.mods.go.kr/OpenAPI3/boundary/hadmarea.geojson`
