@@ -241,8 +241,24 @@ document.addEventListener("DOMContentLoaded", () => {
     "WORKPLACE_WAGE_EARNERS": { name: "사업장 원천징수 근로자 수", unit: "명", type: "COUNT", color: "#d97706", bg: "rgba(217, 119, 6, 0.12)", minYear: 2016, maxYear: 2023 },
   };
 
+  // Merge dynamic server bounds if provided
+  try {
+    const boundsEl = document.getElementById("indicator-bounds-data");
+    if (boundsEl && boundsEl.textContent) {
+      const serverBounds = JSON.parse(boundsEl.textContent);
+      for (const [key, b] of Object.entries(serverBounds)) {
+        if (INDICATOR_CONFIG[key]) {
+          if (b.min !== undefined) INDICATOR_CONFIG[key].minYear = b.min;
+          if (b.max !== undefined) INDICATOR_CONFIG[key].maxYear = b.max;
+        }
+      }
+    }
+  } catch (err) {
+    console.warn("Failed to parse indicator-bounds-data:", err);
+  }
+
   function getIndicatorMeta(indKey) {
-    return INDICATOR_CONFIG[indKey] || { name: indKey, unit: "", type: "COUNT", color: "#38bdf8", bg: "rgba(56, 189, 248, 0.12)", minYear: 2010, maxYear: 2024 };
+    return INDICATOR_CONFIG[indKey] || { name: indKey, unit: "", type: "COUNT", color: "#38bdf8", bg: "rgba(56, 189, 248, 0.12)", minYear: 2010, maxYear: 2026 };
   }
 
   function updateYearSelectorAvailability(indKey) {

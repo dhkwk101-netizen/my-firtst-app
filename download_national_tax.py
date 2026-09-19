@@ -53,3 +53,15 @@ for tbl_id, name in tables:
     time.sleep(0.4)
 
 print("Finished downloading national provincial/municipal tax tables!")
+
+# Optional Google Drive Auto-Upload
+try:
+    from upload_results_to_drive import archive_and_upload
+    print("\nStarting Google Drive dataset upload...")
+    archive_and_upload(
+        source_dir="var/raw/national_tax",
+        archive_name="kosis_national_tax_2010_2024.zip"
+    )
+except Exception as e:
+    print(f"ℹ️ Google Drive upload skipped or failed ({e}). Raw files are safely preserved locally in var/raw/national_tax/")
+

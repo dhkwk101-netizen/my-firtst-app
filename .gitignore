@@ -12,3 +12,12 @@ dist/
 build/
 tmp/
 explorer/static/geo/boundaries/*.geojson
+
+# Secrets & Credentials
+*.json
+!pyproject.toml
+!package.json
+token.json
+client_secret*.json
+*.key
+*.pem

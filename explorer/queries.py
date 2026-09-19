@@ -395,6 +395,7 @@ def query_race_data(
         race_frames.append({
             "year": y,
             "items": top_list,
+            "_allScored": sorted_list,
         })
 
     # Prune trailing empty frames so video animation never drops to 0 at the end
@@ -408,6 +409,70 @@ def query_race_data(
     actual_start_year = race_frames[0]["year"] if race_frames else start_year
     actual_end_year = race_frames[-1]["year"] if race_frames else end_year
 
+    # Build comprehensive allRegionsSummary across all active regions in this period
+    all_regions_summary = []
+    if race_frames:
+        first_frame = race_frames[0]
+        last_frame = race_frames[-1]
+
+        # Map year -> {regionKey -> {rank, value, rawValue}}
+        yearly_region_map = {}
+        for f in race_frames:
+            y = f["year"]
+            m = {}
+            for r_idx, it in enumerate(f.get("_allScored", []), start=1):
+                m[it["regionKey"]] = {
+                    "rank": r_idx,
+                    "value": it["value"],
+                    "rawValue": it["rawValue"],
+                }
+            yearly_region_map[y] = m
+
+        first_all_map = yearly_region_map.get(actual_start_year, {})
+        last_all_map = yearly_region_map.get(actual_end_year, {})
+
+        last_scored = last_frame.get("_allScored", [])
+        for rank, it in enumerate(last_scored, start=1):
+            reg_key = it["regionKey"]
+            f_info = first_all_map.get(reg_key)
+            start_rank = f_info["rank"] if f_info else None
+            start_val = f_info["value"] if f_info else None
+            start_raw = f_info["rawValue"] if f_info else None
+
+            rank_diff = None
+            if start_rank is not None:
+                diff = start_rank - rank
+                rank_diff = diff
+
+            yearly_values = {}
+            yearly_raw_values = {}
+            for f in race_frames:
+                y = f["year"]
+                y_info = yearly_region_map.get(y, {}).get(reg_key)
+                yearly_values[y] = y_info["value"] if y_info else None
+                yearly_raw_values[y] = y_info["rawValue"] if y_info else None
+
+            all_regions_summary.append({
+                "finalRank": rank,
+                "regionKey": reg_key,
+                "name": it["regionName"],
+                "fullName": f"{it['shortProvinceName']} {it['regionName']}".strip(),
+                "province": it["provinceName"],
+                "shortProvince": it["shortProvinceName"],
+                "startRank": start_rank,
+                "startValue": start_val,
+                "startRawValue": start_raw,
+                "finalValue": it["value"],
+                "finalRawValue": it["rawValue"],
+                "rankDiff": rank_diff,
+                "yearlyValues": yearly_values,
+                "yearlyRawValues": yearly_raw_values,
+            })
+
+    # Clean up internal _allScored property from race_frames
+    for f in race_frames:
+        f.pop("_allScored", None)
+
     prov_info = PROVINCE_MAP.get(province_code) if province_code else None
     display_prov_name = "수도권" if province_code == "SUDOGWON" else (prov_info["name"] if prov_info else "전국")
     display_prov_short = "수도권" if province_code == "SUDOGWON" else (prov_info["short"] if prov_info else "전국")
@@ -415,6 +480,8 @@ def query_race_data(
     return {
         "indicatorKey": indicator_key,
         "indicatorName": ind_obj.name if ind_obj else indicator_key,
+        "indicatorDescription": ind_obj.description if ind_obj else "",
+        "indicatorCategory": ind_obj.category if ind_obj else "",
         "rankingMode": ranking_mode,
         "unit": "%" if ranking_mode == "GROWTH_RATE" else (ind_obj.canonical_unit.name if ind_obj and ind_obj.canonical_unit else ""),
         "unitSymbol": "%" if ranking_mode == "GROWTH_RATE" else (ind_obj.canonical_unit.symbol if ind_obj and ind_obj.canonical_unit else ""),
@@ -426,6 +493,7 @@ def query_race_data(
         "provinceName": display_prov_name,
         "shortProvinceName": display_prov_short,
         "frames": race_frames,
+        "allRegionsSummary": all_regions_summary,
     }
 
 

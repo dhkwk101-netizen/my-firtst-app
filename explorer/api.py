@@ -21,7 +21,7 @@ def _get_year_bounds(indicator_id: str | None = None):
         max_y=Max('period__period_end__year')
     )
     min_bound = min(agg['min_y'] or 2010, 2010)
-    max_bound = max(agg['max_y'] or 2024, 2024)
+    max_bound = agg['max_y'] or 2026
     return min_bound, max_bound
 
 def api_regions(request: HttpRequest) -> JsonResponse:
@@ -184,7 +184,7 @@ def api_check_updates(request: HttpRequest) -> JsonResponse:
 
 @csrf_exempt
 def api_sync_updates(request: HttpRequest) -> JsonResponse:
-    from explorer.updater import sync_population_year
+    from explorer.updater import sync_population_year, sync_fiscal_year, sync_economy_year
     category = request.POST.get("category") or request.GET.get("category") or "POPULATION"
     year_str = request.POST.get("year") or request.GET.get("year") or "2025"
     try:
@@ -195,8 +195,112 @@ def api_sync_updates(request: HttpRequest) -> JsonResponse:
     if category == "POPULATION":
         res = sync_population_year(year)
         return JsonResponse(res)
+    elif category == "FISCAL":
+        res = sync_fiscal_year(year)
+        return JsonResponse(res)
+    elif category == "ECONOMY":
+        res = sync_economy_year(year)
+        return JsonResponse(res)
     else:
         return JsonResponse({
             "success": False,
-            "message": f"'{category}' 지표는 아직 정부(통계청/행안부)에서 {year}년 자료를 공표하지 않았습니다."
+            "message": f"'{category}' 지표는 아직 정부(통계청/행안부)에서 {year}년 자료를 공표하지 않았거나 수기 공표 항목입니다."
         })
+
+
+def api_drive_status(request: HttpRequest) -> JsonResponse:
+    """Returns Google Drive integration status and recent files."""
+    from explorer.drive_client import drive_client
+    try:
+        files = drive_client.list_folder_files()
+        return JsonResponse({
+            "connected": True,
+            "folderId": drive_client.folder_id,
+            "files": files,
+        })
+    except Exception as e:
+        return JsonResponse({
+            "connected": False,
+            "folderId": drive_client.folder_id,
+            "error": str(e),
+        })
+
+
+@csrf_exempt
+def api_drive_upload(request: HttpRequest) -> JsonResponse:
+    """Uploads CSV, raw JSON dataset, or custom content directly to Google Drive."""
+    import json
+    from explorer.drive_client import drive_client
+
+    if request.method != "POST":
+        return JsonResponse({"error": "POST method required"}, status=405)
+
+    try:
+        data = json.loads(request.body.decode("utf-8")) if request.body else {}
+    except Exception:
+        data = request.POST.dict()
+
+    action = request.POST.get("action") or data.get("action", "csv")
+    filename = request.POST.get("filename") or data.get("filename", "kosis_export.csv")
+
+    try:
+        # 1. Handle file uploaded via FormData (multipart/form-data, e.g. webm video, png image)
+        if "file" in request.FILES:
+            uploaded_file = request.FILES["file"]
+            file_bytes = uploaded_file.read()
+            mimetype = uploaded_file.content_type
+            if not mimetype:
+                if filename.endswith(".png"):
+                    mimetype = "image/png"
+                elif filename.endswith(".jpg") or filename.endswith(".jpeg"):
+                    mimetype = "image/jpeg"
+                elif filename.endswith(".webm"):
+                    mimetype = "video/webm"
+                else:
+                    mimetype = "application/octet-stream"
+
+            res = drive_client.upload_bytes(
+                data=file_bytes,
+                remote_name=filename,
+                mimetype=mimetype,
+                overwrite=True
+            )
+            return JsonResponse({
+                "success": True,
+                "file": res,
+                "message": f"구글 드라이브(STATRACE)에 '{filename}' 파일 저장 완료!"
+            })
+
+
+        # 2. Handle raw_zip archive
+        if action == "raw_zip":
+            from upload_results_to_drive import archive_and_upload
+            res = archive_and_upload(archive_name=filename)
+            return JsonResponse({
+                "success": True,
+                "file": res,
+                "message": f"성공적으로 구글 드라이브에 {filename} 파일을 업로드했습니다!"
+            })
+
+        # 3. Direct text/json/csv content upload
+        content = data.get("content", "")
+        content_bytes = content.encode("utf-8")
+        mimetype = "text/csv;charset=utf-8" if filename.endswith(".csv") else "application/json;charset=utf-8"
+        res = drive_client.upload_bytes(
+            data=content_bytes,
+            remote_name=filename,
+            mimetype=mimetype,
+            overwrite=True
+        )
+        return JsonResponse({
+            "success": True,
+            "file": res,
+            "message": f"구글 드라이브 '{filename}' 업로드 완료!"
+        })
+    except Exception as e:
+        return JsonResponse({
+            "success": False,
+            "error": str(e)
+        }, status=500)
+
+

@@ -10,6 +10,8 @@ from explorer.api import (
     api_series,
     api_sync_updates,
     api_versus_data,
+    api_drive_status,
+    api_drive_upload,
 )
 from explorer.views import index
 
@@ -28,5 +30,8 @@ urlpatterns = [
     path("api/regional_dashboard", api_regional_dashboard, name="api_regional_dashboard_alias"),
     path("api/check-updates", api_check_updates, name="api_check_updates"),
     path("api/sync-updates", api_sync_updates, name="api_sync_updates"),
+    path("api/drive-status", api_drive_status, name="api_drive_status"),
+    path("api/drive-upload", api_drive_upload, name="api_drive_upload"),
 ]
+
 

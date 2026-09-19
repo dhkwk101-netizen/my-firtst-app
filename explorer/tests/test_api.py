@@ -106,3 +106,15 @@ class ApiTests(TestCase):
         data2 = res2.json()
         self.assertIn("radarScores", data2)
 
+    def test_check_updates_endpoint(self):
+        res = self.client.get("/api/check-updates")
+        self.assertEqual(res.status_code, 200)
+        data = res.json()
+        self.assertIn("categories", data)
+        self.assertIn("overall_update_available", data)
+        cat_keys = [c["key"] for c in data["categories"]]
+        self.assertIn("FISCAL", cat_keys)
+        self.assertIn("POPULATION", cat_keys)
+        self.assertIn("ECONOMY", cat_keys)
+        self.assertIn("TAX", cat_keys)
+

@@ -170,8 +170,16 @@
       }
     }
 
+    const CATEGORY_NAMES = {
+      'POPULATION': '주민등록 인구 통계',
+      'TAX': '지방세 세입 통계',
+      'FISCAL': '지자체 재정자립도',
+      'ECONOMY': '가동 사업체 통계',
+    };
+
     async function startSync(catKey, targetYear, triggerBtn) {
-      if (!confirm(`통계청(KOSIS)에서 [${targetYear}년 주민등록 인구 데이터]를 수집하여 DB에 적재하시겠습니까?\n(약 2~3초 소요되며, 완료 후 화면이 자동으로 최신화됩니다.)`)) {
+      const catLabel = CATEGORY_NAMES[catKey] || '통계';
+      if (!confirm(`통계청(KOSIS)에서 [${targetYear}년 ${catLabel} 데이터]를 수집하여 DB에 적재하시겠습니까?\n(약 2~3초 소요되며, 완료 후 화면이 자동으로 최신화됩니다.)`)) {
         return;
       }
 
@@ -183,7 +191,7 @@
       if (progressBox) {
         progressBox.classList.remove('hidden');
         progressBox.className = 'p-3.5 rounded-xl border border-sky-300 bg-sky-50 flex flex-col gap-2 transition-all';
-        progressText.innerHTML = `⏳ <strong>통계청 Open API</strong>로부터 ${targetYear}년 전국 230여개 지자체 인구 통계를 수집 및 적재 중입니다...`;
+        progressText.innerHTML = `⏳ <strong>통계청 Open API</strong>로부터 ${targetYear}년 ${catLabel}를 수집 및 적재 중입니다...`;
       }
 
       try {
@@ -214,12 +222,65 @@
       } catch (err) {
         console.error('Sync failed:', err);
         alert('동기화 통신 중 오류가 발생했습니다.');
-        if (progressBox) progressBox.classList.add('hidden');
         if (triggerBtn) {
           triggerBtn.disabled = false;
           triggerBtn.classList.remove('opacity-60', 'cursor-not-allowed');
         }
       }
     }
+
+    // Google Drive Full RAW Backup Button Handler
+    const backupDriveBtn = document.getElementById('btn-sync-upload-drive-zip');
+    const backupStatusEl = document.getElementById('drive-backup-status');
+
+    if (backupDriveBtn) {
+      backupDriveBtn.addEventListener('click', async () => {
+        const origHtml = backupDriveBtn.innerHTML;
+        backupDriveBtn.disabled = true;
+        backupDriveBtn.innerHTML = '<span class="material-symbols-outlined text-xs animate-spin">progress_activity</span><span>압축 & 전송 중...</span>';
+
+        if (backupStatusEl) {
+          backupStatusEl.classList.remove('hidden');
+          backupStatusEl.className = 'text-[11px] font-medium text-sky-700 pt-1';
+          backupStatusEl.textContent = '⏳ 로컬 수집 결과물(35개 JSON)을 ZIP 압축하여 구글 드라이브로 전송하고 있습니다...';
+        }
+
+        try {
+          const res = await fetch('/api/drive-upload', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'raw_zip', filename: 'kosis_raw_dataset.zip' })
+          });
+          const result = await res.json();
+          if (result.success) {
+            if (backupStatusEl) {
+              backupStatusEl.className = 'text-[11px] font-semibold text-emerald-700 pt-1';
+              backupStatusEl.innerHTML = `🎉 <strong>구글 드라이브 백업 완료!</strong> (${result.message || 'STATRACE 폴더에 저장됨'})`;
+            }
+            backupDriveBtn.innerHTML = '<span class="material-symbols-outlined text-xs text-emerald-300">check</span><span>백업 완료</span>';
+            setTimeout(() => {
+              backupDriveBtn.innerHTML = origHtml;
+              backupDriveBtn.disabled = false;
+            }, 3500);
+          } else {
+            if (backupStatusEl) {
+              backupStatusEl.className = 'text-[11px] font-semibold text-rose-600 pt-1';
+              backupStatusEl.textContent = `❌ 구글 드라이브 전송 실패: ${result.error || '권한 또는 할당량 오류'}`;
+            }
+            backupDriveBtn.innerHTML = origHtml;
+            backupDriveBtn.disabled = false;
+          }
+        } catch (err) {
+          console.error(err);
+          if (backupStatusEl) {
+            backupStatusEl.className = 'text-[11px] font-semibold text-rose-600 pt-1';
+            backupStatusEl.textContent = `❌ 통신 오류: ${err.message}`;
+          }
+          backupDriveBtn.innerHTML = origHtml;
+          backupDriveBtn.disabled = false;
+        }
+      });
+    }
   });
+
 })();
