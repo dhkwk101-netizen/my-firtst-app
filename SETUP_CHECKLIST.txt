@@ -1,0 +1,119 @@
+# ==============================================================================
+# 🚀 KOSIS Explorer (Regional Data Explorer) - 신규 환경/컴퓨터 부트스트랩 체크리스트
+# 대상: LLM 에이전트 및 개발자
+# 목적: 깃허브에서 git clone 받은 새 컴퓨터에서 프로젝트를 100% 정상 기동하기 위한 단계별 가이드
+# ==============================================================================
+
+[SYSTEM_PREREQUISITES]
+- OS: Windows 10/11 (PowerShell 권장) 또는 Linux/macOS
+- Python: 3.13 ~ 3.14 (3.14 권장)
+- PostgreSQL: 16 이상 설치 및 실행 중 (기본 포트 5432 또는 5433)
+  * 필수 확장: btree_gist (Django postgres 앱 연동용)
+
+--------------------------------------------------------------------------------
+[STEP 1] 저장소 클론 및 작업 디렉토리 진입
+--------------------------------------------------------------------------------
+1. git clone https://github.com/dhkwk101-netizen/my-firtst-app.git kosis
+2. cd kosis
+
+--------------------------------------------------------------------------------
+[STEP 2] Python 가상환경(.venv) 생성 및 패키지 설치
+--------------------------------------------------------------------------------
+1. 가상환경 생성:
+   python -m venv .venv
+
+2. 가상환경 활성화:
+   - Windows (PowerShell):
+     .\.venv\Scripts\Activate.ps1
+   - Windows (CMD):
+     .\.venv\Scripts\activate.bat
+   - Linux/macOS:
+     source .venv/bin/activate
+
+3. 패키지 설치:
+   pip install --upgrade pip
+   pip install -r requirements.txt
+   pip install -e .
+
+--------------------------------------------------------------------------------
+[STEP 3] PostgreSQL 데이터베이스 생성 및 권한 설정
+--------------------------------------------------------------------------------
+1. PostgreSQL 서비스 실행 확인:
+   - Windows: Get-Service -Name postgresql* (Running 상태인지 확인)
+   - Linux: sudo systemctl status postgresql
+
+2. 'kosis' 데이터베이스 생성:
+   psql -U postgres -h localhost -p 5432 -c "CREATE DATABASE kosis;"
+
+3. 필수 PostgreSQL 확장 모듈 활성화:
+   psql -U postgres -h localhost -p 5432 -d kosis -c "CREATE EXTENSION IF NOT EXISTS btree_gist;"
+
+--------------------------------------------------------------------------------
+[STEP 4] 환경 변수 및 설정 (.env)
+--------------------------------------------------------------------------------
+기본 설정은 config/settings.py에 정의되어 있으며, 필요 시 환경변수를 설정합니다:
+- PGDATABASE (기본값: kosis)
+- PGUSER (기본값: postgres)
+- PGPASSWORD (본인 로컬 PostgreSQL 비밀번호)
+- PGHOST (기본값: localhost)
+- PGPORT (기본값: 5432)
+- DJANGO_SECRET_KEY (선택사항, 기본 개발용 키 내장됨)
+- DJANGO_DEBUG (기본값: true)
+
+※ Windows PowerShell에서 비밀번호 임시 설정 예시:
+   $env:PGPASSWORD="your_password"
+   또는 프로젝트 루트에 .env 파일을 두고 필요시 환경변수를 로드합니다.
+
+--------------------------------------------------------------------------------
+[STEP 5] 데이터베이스 스키마 마이그레이션 (DB 구조 생성)
+--------------------------------------------------------------------------------
+1. 마이그레이션 실행:
+   python manage.py migrate
+
+2. 마이그레이션 정상 적용 확인:
+   python manage.py showmigrations
+
+--------------------------------------------------------------------------------
+[STEP 6] 필수 데이터 복원 또는 파이프라인 수집 (중요)
+--------------------------------------------------------------------------------
+* 선택 A: 기존 컴퓨터에서 DB 백업본(kosis_backup.sql)을 가져온 경우 (가장 빠름)
+  psql -U postgres -h localhost -p 5432 -d kosis < kosis_backup.sql
+
+* 선택 B: 백업본 없이 KOSIS OpenAPI / 파이프라인을 통해 새로 수집하는 경우
+  1) 전국 시군구 지도 경계 데이터 생성:
+     python manage.py build_national_boundaries
+  2) 인구 및 재정 기초 데이터 동기화:
+     python manage.py ingest_kosis_population
+     python manage.py ingest_kosis_demographics_fiscal
+     python manage.py ingest_kosis_national_tax
+     python manage.py ingest_kosis_economy
+     python manage.py ingest_kosis_income
+  3) 마트 데이터 집계 및 파생지표 재계산:
+     python manage.py rebuild_mart
+
+--------------------------------------------------------------------------------
+[STEP 7] 구글 드라이브 / 클라우드 연동 인증 (선택 사항)
+--------------------------------------------------------------------------------
+* 유튜브 쇼츠 렌더링 결과 자동 드라이브 업로드를 사용하는 경우에만 필요:
+  1) client_secret.json 파일을 프로젝트 루트에 배치
+  2) python authenticate_drive.py 실행하여 최초 브라우저 OAuth 인증 및 token.json 생성
+
+--------------------------------------------------------------------------------
+[STEP 8] 개발 서버 실행 및 브라우저 접속 확인
+--------------------------------------------------------------------------------
+1. 서버 기동:
+   python manage.py runserver 127.0.0.1:8000
+   (또는 Windows의 경우 start_server.bat 더블 클릭)
+
+2. 웹 브라우저 확인:
+   http://127.0.0.1:8000 접속
+   - 메인 대시보드 및 전국 지도(Leaflet) 렌더링 확인
+   - 지표 선택기(지방세, 재정, 인구소멸, 지역경제) 동작 확인
+   - 레이스 시각화 모달 및 차트 렌더링 확인
+
+--------------------------------------------------------------------------------
+[STEP 9] 기본 헬스체크 및 테스트 (검증)
+--------------------------------------------------------------------------------
+1. API 테스트 실행:
+   python manage.py test explorer.tests
+2. 테스트 통과 여부 확인: OK 확인되면 배포 및 기동 준비 완료!
